@@ -120,10 +120,18 @@ function processFile(file) {
 }
 
 function processSingleFile(file) {
-    // Validate file type
+    // Check if it's a ZIP file - if so, treat as batch processing
+    const isZipFile = file.name.toLowerCase().endsWith('.zip');
+    if (isZipFile) {
+        // For ZIP files, use batch processing
+        processBatchFiles();
+        return;
+    }
+    
+    // Validate file type for single images
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp', 'image/tiff'];
     if (!allowedTypes.includes(file.type)) {
-        showError('Please select a valid image file (JPG, PNG, GIF, BMP, TIFF).');
+        showError('Please select a valid image file (JPG, PNG, GIF, BMP, TIFF) or ZIP file.');
         return;
     }
     
@@ -180,13 +188,23 @@ function processBatchFiles() {
     // Validate all files
     for (let file of files) {
         const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp', 'image/tiff'];
-        if (!allowedTypes.includes(file.type)) {
-            showError(`Invalid file type: ${file.name}. Please select valid image files.`);
+        const allowedExtensions = ['.zip'];
+        
+        // Check if it's a ZIP file
+        const isZipFile = file.name.toLowerCase().endsWith('.zip');
+        
+        if (!allowedTypes.includes(file.type) && !isZipFile) {
+            showError(`Invalid file type: ${file.name}. Please select valid image files or ZIP files.`);
             return;
         }
         
-        if (file.size > 16 * 1024 * 1024) {
-            showError(`File too large: ${file.name}. Maximum size is 16MB.`);
+        // Different size limits for ZIP files vs images
+        const isZipFile = file.name.toLowerCase().endsWith('.zip');
+        const maxSize = isZipFile ? 50 * 1024 * 1024 : 16 * 1024 * 1024; // 50MB for ZIP, 16MB for images
+        const maxSizeText = isZipFile ? '50MB' : '16MB';
+        
+        if (file.size > maxSize) {
+            showError(`File too large: ${file.name}. Maximum size is ${maxSizeText}.`);
             return;
         }
     }

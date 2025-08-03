@@ -155,7 +155,14 @@ class BatchProcessor:
             with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                 futures = []
                 for file in files:
-                    file_data = file.read()
+                    # Handle both regular FileStorage objects and our MockFile objects
+                    if hasattr(file, '_data'):
+                        # MockFile object - data is already loaded
+                        file_data = file._data
+                    else:
+                        # Regular FileStorage object - read the data
+                        file_data = file.read()
+                    
                     future = executor.submit(
                         self.process_single_image, 
                         file_data, 

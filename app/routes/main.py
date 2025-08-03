@@ -170,16 +170,35 @@ def init_routes(app, config):
                         try:
                             with tempfile.TemporaryDirectory() as temp_dir:
                                 extracted_files = extract_images_from_zip(file, temp_dir)
+                                
                                 # Create FileStorage-like objects for extracted files
                                 for extracted_path in extracted_files:
                                     with open(extracted_path, 'rb') as f:
                                         file_data = f.read()
-                                    # Create a mock file object
-                                    mock_file = type('MockFile', (), {
-                                        'filename': os.path.basename(extracted_path),
-                                        'read': lambda: file_data,
-                                        'seek': lambda pos: None
-                                    })()
+                                    
+                                    # Create a proper mock file object
+                                    class MockFile:
+                                        def __init__(self, filename, data):
+                                            self.filename = filename
+                                            self._data = data
+                                            self._position = 0
+                                        
+                                        def read(self, size=None):
+                                            if size is None:
+                                                return self._data
+                                            else:
+                                                data = self._data[self._position:self._position + size]
+                                                self._position += size
+                                                return data
+                                        
+                                        def seek(self, position):
+                                            self._position = position
+                                        
+                                        def save(self, path):
+                                            with open(path, 'wb') as f:
+                                                f.write(self._data)
+                                    
+                                    mock_file = MockFile(os.path.basename(extracted_path), file_data)
                                     valid_files.append(mock_file)
                         except Exception as e:
                             return jsonify({'error': f'Error processing ZIP file {file.filename}: {str(e)}'}), 400
