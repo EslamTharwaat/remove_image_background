@@ -199,7 +199,6 @@ function processBatchFiles() {
         }
         
         // Different size limits for ZIP files vs images
-        const isZipFile = file.name.toLowerCase().endsWith('.zip');
         const maxSize = isZipFile ? 50 * 1024 * 1024 : 16 * 1024 * 1024; // 50MB for ZIP, 16MB for images
         const maxSizeText = isZipFile ? '50MB' : '16MB';
         
