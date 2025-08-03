@@ -801,6 +801,96 @@ body {
     flex-wrap: wrap;
 }
 
+/* S3 Settings styles */
+.s3-settings-section {
+    background: white;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    padding: 25px;
+    margin: 20px 0;
+}
+
+.s3-settings-section h3 {
+    color: #000;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.section-description {
+    color: #6c757d;
+    margin-bottom: 20px;
+    font-size: 0.95rem;
+}
+
+.s3-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.s3-toggle input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: #000;
+}
+
+.toggle-label {
+    color: #000;
+    font-weight: 500;
+}
+
+.s3-credentials {
+    margin-top: 20px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.s3-credentials.hidden {
+    display: none;
+}
+
+.s3-status {
+    margin-top: 15px;
+    padding: 10px 15px;
+    border-radius: 6px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+}
+
+.status-icon {
+    font-size: 0.8rem;
+}
+
+.status-icon.connected {
+    color: #28a745;
+}
+
+.status-icon.error {
+    color: #dc3545;
+}
+
+.status-icon.disabled {
+    color: #6c757d;
+}
+
+.status-text {
+    color: #495057;
+    font-weight: 500;
+}
+
 /* Notification styles */
 .notification {
     position: fixed;

@@ -33,4 +33,8 @@ def create_app(config_name='default'):
     # Initialize API routes
     init_api_routes(app, config[config_name])
     
+    # Disable CSRF for API routes after blueprint registration
+    if 'api' in app.blueprints:
+        csrf.exempt(app.blueprints['api'])
+    
     return app 

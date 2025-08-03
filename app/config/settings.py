@@ -39,6 +39,15 @@ class Config:
     AVAILABLE_MODELS = ['u2net', 'u2netp', 'u2net_human_seg', 'u2net_cloth_seg']
     DEFAULT_MODEL = 'u2net'
     
+    # S3 Configuration
+    ENABLE_S3_UPLOAD = False
+    S3_BUCKET_NAME = os.environ.get('S3_BUCKET_NAME', '')
+    S3_ACCESS_KEY_ID = os.environ.get('S3_ACCESS_KEY_ID', '')
+    S3_SECRET_ACCESS_KEY = os.environ.get('S3_SECRET_ACCESS_KEY', '')
+    S3_REGION_NAME = os.environ.get('S3_REGION_NAME', 'us-east-1')
+    S3_FOLDER_PREFIX = os.environ.get('S3_FOLDER_PREFIX', 'background-remover/')
+    S3_PUBLIC_URL_EXPIRY = 3600  # 1 hour
+    
     # Security settings
     WTF_CSRF_ENABLED = True
     WTF_CSRF_TIME_LIMIT = 3600  # 1 hour

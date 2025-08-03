@@ -10,6 +10,7 @@ from app.utils.file_utils import (
 )
 from app.services.background_remover import BackgroundRemoverService
 from app.services.batch_processor import BatchProcessor
+from app.services.s3_service import S3Service
 import os
 import tempfile
 import base64
@@ -24,6 +25,7 @@ def init_api_routes(app, config):
     config_instance = config if hasattr(config, 'AVAILABLE_MODELS') else app.config
     background_remover = BackgroundRemoverService(config_instance)
     batch_processor = BatchProcessor(config_instance, background_remover)
+    s3_service = S3Service(config_instance)
     
     @api.route('/health', methods=['GET'])
     def health_check():
@@ -291,6 +293,48 @@ def init_api_routes(app, config):
             'max_file_size': config_instance.MAX_CONTENT_LENGTH,
             'allowed_extensions': list(config_instance.ALLOWED_EXTENSIONS)
         })
+    
+    @api.route('/test-s3', methods=['POST'])
+    def test_s3_connection():
+        """Test S3 connection with provided credentials"""
+        try:
+            data = request.get_json()
+            
+            # Create temporary config with S3 settings
+            class TempConfig:
+                def __init__(self, data):
+                    self.ENABLE_S3_UPLOAD = data.get('enable_s3_upload', False)
+                    self.S3_BUCKET_NAME = data.get('s3_bucket_name', '')
+                    self.S3_ACCESS_KEY_ID = data.get('s3_access_key_id', '')
+                    self.S3_SECRET_ACCESS_KEY = data.get('s3_secret_access_key', '')
+                    self.S3_REGION_NAME = data.get('s3_region_name', 'us-east-1')
+                    self.S3_FOLDER_PREFIX = data.get('s3_folder_prefix', 'background-remover/')
+                    self.S3_PUBLIC_URL_EXPIRY = 3600
+            
+            temp_config = TempConfig(data)
+            test_s3_service = S3Service(temp_config)
+            
+            # Test connection
+            bucket_info = test_s3_service.get_bucket_info()
+            
+            if bucket_info.get('enabled') and 'error' not in bucket_info:
+                return jsonify({
+                    'success': True,
+                    'bucket_name': bucket_info.get('bucket_name'),
+                    'region': bucket_info.get('region'),
+                    'message': 'S3 connection successful'
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'error': bucket_info.get('error', 'Unknown error')
+                })
+                
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'error': f'Connection test failed: {str(e)}'
+            })
     
     # Register API blueprint
     app.register_blueprint(api) 

@@ -13,6 +13,9 @@ Werkzeug==2.3.7
 # CSRF Protection
 Flask-WTF==1.1.1
 
+# AWS S3 Integration
+boto3==1.34.0
+
 # Development Dependencies (optional)
 # python-dotenv==1.0.0  # For environment variables
 # pytest==7.4.0         # For testing

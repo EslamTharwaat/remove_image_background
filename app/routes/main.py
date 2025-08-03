@@ -9,6 +9,7 @@ from app.utils.file_utils import (
 )
 from app.services.background_remover import BackgroundRemoverService
 from app.services.batch_processor import BatchProcessor
+from app.services.s3_service import S3Service
 import os
 import tempfile
 
@@ -19,6 +20,7 @@ def init_routes(app, config):
     """Initialize routes with app and config"""
     background_remover = BackgroundRemoverService(config)
     batch_processor = BatchProcessor(config, background_remover)
+    s3_service = S3Service(config)
     
     @main.route('/')
     def index():
@@ -90,14 +92,35 @@ def init_routes(app, config):
                     ai_model
                 )
                 
-                return jsonify({
+                # Upload to S3 if enabled
+                s3_result = None
+                if s3_service.is_enabled():
+                    s3_result = s3_service.upload_file(output_path, output_filename)
+                
+                response_data = {
                     'success': True,
                     'original_image': f'/uploads/{secure_filename_gen}',
                     'processed_image': f'/outputs/{output_filename}',
                     'message': f'Background removed successfully in {result["processing_time"]} seconds!',
                     'processing_time': result['processing_time'],
                     'ai_model': result['ai_model']
-                })
+                }
+                
+                # Add S3 information if upload was successful
+                if s3_result and s3_result.get('success'):
+                    response_data['s3_upload'] = {
+                        'success': True,
+                        'public_url': s3_result['public_url'],
+                        'presigned_url': s3_result['presigned_url'],
+                        's3_key': s3_result['s3_key']
+                    }
+                elif s3_service.is_enabled():
+                    response_data['s3_upload'] = {
+                        'success': False,
+                        'error': 'S3 upload failed'
+                    }
+                
+                return jsonify(response_data)
                 
             except Exception as e:
                 # Clean up uploaded file if processing fails
