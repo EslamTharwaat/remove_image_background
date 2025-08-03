@@ -148,6 +148,9 @@ function processSingleFile(file) {
     const formData = new FormData();
     formData.append('file', file);
     
+    // Add CSRF token
+    formData.append('csrf_token', csrfToken);
+    
     // Add quality settings
     const qualitySettings = getQualitySettings();
     formData.append('alpha_matting', qualitySettings.alpha_matting);
@@ -216,6 +219,9 @@ function processBatchFiles() {
     files.forEach(file => {
         formData.append('files[]', file);
     });
+    
+    // Add CSRF token
+    formData.append('csrf_token', csrfToken);
     
     // Add quality settings
     const qualitySettings = getQualitySettings();
@@ -515,6 +521,7 @@ function reprocessImage() {
     // Create FormData for reprocessing
     const formData = new FormData();
     formData.append('image_path', currentOriginalImageUrl);
+    formData.append('csrf_token', csrfToken);
     formData.append('alpha_matting', qualitySettings.alpha_matting);
     formData.append('foreground_threshold', qualitySettings.foreground_threshold);
     formData.append('background_threshold', qualitySettings.background_threshold);
