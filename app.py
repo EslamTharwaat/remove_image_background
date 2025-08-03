@@ -2,7 +2,7 @@ import os
 import uuid
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
-import backgroundremover
+from backgroundremover import bg
 from PIL import Image
 import io
 
@@ -52,7 +52,15 @@ def upload_file():
             output_path = os.path.join(app.config['OUTPUT_FOLDER'], output_filename)
             
             # Use backgroundremover library
-            backgroundremover.remove_bg(filepath, output_path)
+            with open(filepath, 'rb') as input_file:
+                input_data = input_file.read()
+            
+            # Remove background using the correct API
+            output_data = bg.remove(input_data)
+            
+            # Save the processed image
+            with open(output_path, 'wb') as output_file:
+                output_file.write(output_data)
             
             return jsonify({
                 'success': True,
