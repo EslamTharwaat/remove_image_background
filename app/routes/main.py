@@ -298,6 +298,8 @@ def init_routes(app, config):
         except Exception as e:
             return jsonify({'error': f'Error reprocessing image: {str(e)}'}), 500
     
+
+    
     @main.route('/uploads/<filename>')
     def uploaded_file(filename):
         """Serve uploaded files"""
@@ -307,12 +309,17 @@ def init_routes(app, config):
         
         filepath = safe_join(config.UPLOAD_FOLDER, filename)
         if filepath is None or not os.path.exists(filepath):
-            return jsonify({'error': 'File not found'}), 404
+            return jsonify({'error': f'File not found: {filepath}'}), 404
         
-        response = send_from_directory(config.UPLOAD_FOLDER, filename)
-        response.headers['X-Content-Type-Options'] = 'nosniff'
-        response.headers['X-Frame-Options'] = 'DENY'
-        return response
+        try:
+            # Use absolute path
+            abs_path = os.path.abspath(config.UPLOAD_FOLDER)
+            response = send_from_directory(abs_path, filename)
+            response.headers['X-Content-Type-Options'] = 'nosniff'
+            response.headers['X-Frame-Options'] = 'DENY'
+            return response
+        except Exception as e:
+            return jsonify({'error': f'Send from directory error: {str(e)}', 'path': abs_path if 'abs_path' in locals() else 'not set'}), 500
     
     @main.route('/outputs/<filename>')
     def output_file(filename):
@@ -323,12 +330,17 @@ def init_routes(app, config):
         
         filepath = safe_join(config.OUTPUT_FOLDER, filename)
         if filepath is None or not os.path.exists(filepath):
-            return jsonify({'error': 'File not found'}), 404
+            return jsonify({'error': f'File not found: {filepath}'}), 404
         
-        response = send_from_directory(config.OUTPUT_FOLDER, filename)
-        response.headers['X-Content-Type-Options'] = 'nosniff'
-        response.headers['X-Frame-Options'] = 'DENY'
-        return response
+        try:
+            # Use absolute path
+            abs_path = os.path.abspath(config.OUTPUT_FOLDER)
+            response = send_from_directory(abs_path, filename)
+            response.headers['X-Content-Type-Options'] = 'nosniff'
+            response.headers['X-Frame-Options'] = 'DENY'
+            return response
+        except Exception as e:
+            return jsonify({'error': f'Send from directory error: {str(e)}', 'path': abs_path if 'abs_path' in locals() else 'not set'}), 500
     
     @main.route('/favicon.ico')
     def favicon():
