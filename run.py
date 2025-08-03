@@ -1,35 +1,21 @@
 #!/usr/bin/env python3
 """
-Background Remover Flask Application
-Startup script for easy execution
+Main application entry point
 """
-
 import os
-import sys
-import subprocess
+from app import create_app
 
-def main():
-    # Check if virtual environment exists
-    if not os.path.exists('venv'):
-        print("Creating virtual environment...")
-        subprocess.run([sys.executable, '-m', 'venv', 'venv'])
-    
-    # Activate virtual environment and run the app
-    if os.name == 'nt':  # Windows
-        python_path = os.path.join('venv', 'Scripts', 'python.exe')
-    else:  # Unix/Linux/Mac
-        python_path = os.path.join('venv', 'bin', 'python')
-    
-    # Install requirements if needed
-    print("Installing dependencies...")
-    subprocess.run([python_path, '-m', 'pip', 'install', '-r', 'requirements.txt'])
-    
-    # Run the Flask application
-    print("Starting Background Remover application...")
-    print("Open your browser and go to: http://localhost:5000")
-    print("Press Ctrl+C to stop the server")
-    
-    subprocess.run([python_path, 'app.py'])
+# Create Flask application
+app = create_app(os.getenv('FLASK_ENV', 'development'))
 
 if __name__ == '__main__':
-    main() 
+    print("🌐 Starting Flask application...")
+    print("✅ Application is running at: http://localhost:5000")
+    print("🛑 Press Ctrl+C to stop the server")
+    
+    # Run the application
+    app.run(
+        host='0.0.0.0',
+        port=5000,
+        debug=True
+    ) 

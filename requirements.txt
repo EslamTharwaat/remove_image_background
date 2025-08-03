@@ -1,5 +1,20 @@
+# Flask Web Framework
 Flask==2.3.3
+
+# Background Removal AI Library
 backgroundremover==0.2.9
+
+# Image Processing
 Pillow>=8.1.1,<10.0.0
+
+# WSGI Utilities
 Werkzeug==2.3.7
-Flask-WTF==1.1.1 
+
+# CSRF Protection
+Flask-WTF==1.1.1
+
+# Development Dependencies (optional)
+# python-dotenv==1.0.0  # For environment variables
+# pytest==7.4.0         # For testing
+# black==23.7.0         # For code formatting
+# flake8==6.0.0         # For linting 

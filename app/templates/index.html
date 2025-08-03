@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Background Remover - AI Image Processing</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='none' stroke='%23000' stroke-width='8'/><text x='50' y='65' font-family='Arial, sans-serif' font-size='50' font-weight='bold' text-anchor='middle' fill='%23000'>R</text></svg>">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-magic"></i>
+                <h1>Background Remover</h1>
+            </div>
+            <p class="subtitle">Remove image backgrounds with AI-powered precision</p>
+        </header>
+
+        <main class="main-content">
+            <div class="upload-section" id="uploadSection">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-content">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <h3>Drop your images here</h3>
+                        <p>or click to browse (supports multiple files)</p>
+                        <span class="file-types">Supports: JPG, PNG, GIF, BMP, TIFF</span>
+                    </div>
+                    <input type="file" id="fileInput" accept="image/*" multiple hidden>
+                </div>
+                
+                <div class="upload-buttons">
+                    <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                        <i class="fas fa-upload"></i>
+                        Choose Images
+                    </button>
+                    <button class="btn btn-secondary" onclick="toggleUploadMode()">
+                        <i class="fas fa-single-image"></i>
+                        Single Image Mode
+                    </button>
+                </div>
+                
+                <div class="quality-settings" id="qualitySettings">
+                    <h4>AI Model & Quality Settings</h4>
+                    
+                    <div class="ai-model-selection">
+                        <label for="aiModel">AI Model:</label>
+                        <select id="aiModel" name="aiModel">
+                            <option value="u2net">U²-Net (General Purpose)</option>
+                            <option value="u2netp">U²-Net+ (Faster)</option>
+                            <option value="u2net_human_seg">U²-Net Human Segmentation</option>
+                            <option value="u2net_cloth_seg">U²-Net Clothing Segmentation</option>
+                        </select>
+                        <small>Choose the best AI model for your image type</small>
+                    </div>
+                    
+                    <div class="settings-grid">
+                        <div class="setting-item">
+                            <label for="alphaMatting">
+                                <input type="checkbox" id="alphaMatting" name="alphaMatting">
+                                Enable Alpha Matting (Better Quality)
+                            </label>
+                            <small>Improves edge quality but slower processing</small>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label for="foregroundThreshold">Foreground Threshold:</label>
+                            <input type="range" id="foregroundThreshold" min="0" max="255" value="240" class="slider">
+                            <span class="slider-value" id="foregroundThresholdValue">240</span>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label for="backgroundThreshold">Background Threshold:</label>
+                            <input type="range" id="backgroundThreshold" min="0" max="255" value="10" class="slider">
+                            <span class="slider-value" id="backgroundThresholdValue">10</span>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label for="erodeSize">Erode Size:</label>
+                            <input type="range" id="erodeSize" min="1" max="20" value="10" class="slider">
+                            <span class="slider-value" id="erodeSizeValue">10</span>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label for="baseSize">Base Size:</label>
+                            <input type="range" id="baseSize" min="500" max="2000" step="100" value="1000" class="slider">
+                            <span class="slider-value" id="baseSizeValue">1000</span>
+                        </div>
+                    </div>
+                    
+                    <div class="quality-presets">
+                        <button class="btn btn-sm btn-outline" onclick="setQualityPreset('fast')">Fast</button>
+                        <button class="btn btn-sm btn-outline" onclick="setQualityPreset('balanced')">Balanced</button>
+                        <button class="btn btn-sm btn-outline" onclick="setQualityPreset('high')">High Quality</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="processing-section" id="processingSection" style="display: none;">
+                <div class="processing-content">
+                    <div class="spinner"></div>
+                    <h3>Processing your image...</h3>
+                    <p>This may take a few moments</p>
+                </div>
+            </div>
+
+            <div class="batch-processing-section" id="batchProcessingSection" style="display: none;">
+                <div class="batch-processing-content">
+                    <div class="batch-header">
+                        <h3>Batch Processing</h3>
+                        <div class="batch-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="batchProgressFill"></div>
+                            </div>
+                            <span id="batchProgressText">0%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="batch-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Total Files:</span>
+                            <span class="stat-value" id="batchTotalFiles">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Processed:</span>
+                            <span class="stat-value" id="batchProcessedFiles">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Errors:</span>
+                            <span class="stat-value" id="batchErrors">0</span>
+                        </div>
+                    </div>
+                    
+                    <div class="batch-status" id="batchStatus">
+                        <p>Starting batch processing...</p>
+                    </div>
+                    
+                    <div class="individual-progress" id="individualProgress">
+                        <!-- Individual image progress will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="results-section" id="resultsSection" style="display: none;">
+                <div class="results-header">
+                    <h2>Results</h2>
+                    <button class="btn btn-secondary" onclick="resetApp()">
+                        <i class="fas fa-plus"></i>
+                        Process Another Image
+                    </button>
+                </div>
+                
+                <div class="image-comparison">
+                    <div class="image-container">
+                        <h3>Original Image</h3>
+                        <div class="image-wrapper">
+                            <img id="originalImage" src="" alt="Original image">
+                        </div>
+                    </div>
+                    
+                    <div class="comparison-arrow">
+                        <i class="fas fa-arrow-right"></i>
+                    </div>
+                    
+                    <div class="image-container">
+                        <h3>Background Removed</h3>
+                        <div class="image-wrapper">
+                            <img id="processedImage" src="" alt="Processed image">
+                        </div>
+                        <div class="download-section">
+                            <button class="btn btn-success" onclick="downloadImage()">
+                                <i class="fas fa-download"></i>
+                                Download
+                            </button>
+                            <button class="btn btn-primary" onclick="showReprocessModal()">
+                                <i class="fas fa-redo"></i>
+                                Reprocess
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="batch-results-section" id="batchResultsSection" style="display: none;">
+                <div class="results-header">
+                    <h2>Batch Results</h2>
+                    <button class="btn btn-secondary" onclick="resetApp()">
+                        <i class="fas fa-plus"></i>
+                        Process More Images
+                    </button>
+                </div>
+                
+                <div class="batch-summary" id="batchSummary">
+                    <div class="summary-stats">
+                        <div class="summary-item success">
+                            <i class="fas fa-check-circle"></i>
+                            <span id="batchSuccessCount">0</span> successful
+                        </div>
+                        <div class="summary-item error">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <span id="batchErrorCount">0</span> errors
+                        </div>
+                        <div class="summary-item time">
+                            <i class="fas fa-clock"></i>
+                            <span id="batchTotalTime">0</span>s total
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="batch-images" id="batchImages">
+                    <!-- Batch results will be populated here -->
+                </div>
+            </div>
+
+            <div class="error-section" id="errorSection" style="display: none;">
+                <div class="error-content">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h3>Oops! Something went wrong</h3>
+                    <p id="errorMessage"></p>
+                    <button class="btn btn-primary" onclick="resetApp()">
+                        <i class="fas fa-redo"></i>
+                        Try Again
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2024 Background Remover. Powered by AI.</p>
+        </footer>
+    </div>
+
+    <script>
+        // Add CSRF token to all AJAX requests
+        const csrfToken = '{{ csrf_token() }}';
+        
+        // Override fetch to include CSRF token
+        const originalFetch = window.fetch;
+        window.fetch = function(url, options = {}) {
+            if (options.method && options.method.toUpperCase() !== 'GET') {
+                options.headers = options.headers || {};
+                options.headers['X-CSRFToken'] = csrfToken;
+            }
+            return originalFetch(url, options);
+        };
+    </script>
+    </div>
+
+    <!-- Reprocess Modal -->
+    <div class="modal" id="reprocessModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Reprocess Image</h3>
+                <button class="modal-close" onclick="hideReprocessModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="reprocess-preview">
+                    <img id="reprocessPreview" src="" alt="Image to reprocess">
+                </div>
+                
+                <div class="reprocess-settings">
+                    <div class="ai-model-selection">
+                        <label for="reprocessAiModel">AI Model:</label>
+                        <select id="reprocessAiModel" name="reprocessAiModel">
+                            <option value="u2net">U²-Net (General Purpose)</option>
+                            <option value="u2netp">U²-Net+ (Faster)</option>
+                            <option value="u2net_human_seg">U²-Net Human Segmentation</option>
+                            <option value="u2net_cloth_seg">U²-Net Clothing Segmentation</option>
+                        </select>
+                    </div>
+                    
+                    <div class="settings-grid">
+                        <div class="setting-item">
+                            <label for="reprocessAlphaMatting">
+                                <input type="checkbox" id="reprocessAlphaMatting" name="reprocessAlphaMatting">
+                                Enable Alpha Matting (Better Quality)
+                            </label>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label for="reprocessForegroundThreshold">Foreground Threshold:</label>
+                            <input type="range" id="reprocessForegroundThreshold" min="0" max="255" value="240" class="slider">
+                            <span class="slider-value" id="reprocessForegroundThresholdValue">240</span>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label for="reprocessBackgroundThreshold">Background Threshold:</label>
+                            <input type="range" id="reprocessBackgroundThreshold" min="0" max="255" value="10" class="slider">
+                            <span class="slider-value" id="reprocessBackgroundThresholdValue">10</span>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label for="reprocessErodeSize">Erode Size:</label>
+                            <input type="range" id="reprocessErodeSize" min="1" max="20" value="10" class="slider">
+                            <span class="slider-value" id="reprocessErodeSizeValue">10</span>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label for="reprocessBaseSize">Base Size:</label>
+                            <input type="range" id="reprocessBaseSize" min="500" max="2000" step="100" value="1000" class="slider">
+                            <span class="slider-value" id="reprocessBaseSizeValue">1000</span>
+                        </div>
+                    </div>
+                    
+                    <div class="quality-presets">
+                        <button class="btn btn-sm btn-outline" onclick="setReprocessQualityPreset('fast')">Fast</button>
+                        <button class="btn btn-sm btn-outline" onclick="setReprocessQualityPreset('balanced')">Balanced</button>
+                        <button class="btn btn-sm btn-outline" onclick="setReprocessQualityPreset('high')">High Quality</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="hideReprocessModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="reprocessImage()">
+                    <i class="fas fa-redo"></i>
+                    Reprocess
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html> 
