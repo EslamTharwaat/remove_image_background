@@ -2,6 +2,7 @@ import os
 import uuid
 import threading
 import hashlib
+import concurrent.futures
 from flask import Flask, render_template, request, jsonify, send_from_directory, session
 from flask_wtf.csrf import CSRFProtect
 from werkzeug.utils import secure_filename
@@ -10,6 +11,7 @@ from backgroundremover import bg
 from PIL import Image
 import io
 import time
+import queue
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or os.urandom(24).hex()
@@ -44,6 +46,11 @@ os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
 MODEL_CACHE = None
 MODEL_LOCK = threading.Lock()
 
+# Batch processing variables
+BATCH_JOBS = {}
+BATCH_COUNTER = 0
+BATCH_LOCK = threading.Lock()
+
 def get_optimized_model():
     """Get or create a cached model instance for faster processing"""
     global MODEL_CACHE
@@ -52,6 +59,51 @@ def get_optimized_model():
             # Initialize the model once and cache it
             MODEL_CACHE = bg.get_model('u2net')
         return MODEL_CACHE
+
+def generate_batch_id():
+    """Generate unique batch ID"""
+    global BATCH_COUNTER
+    with BATCH_LOCK:
+        BATCH_COUNTER += 1
+        return f"batch_{BATCH_COUNTER}_{int(time.time())}"
+
+def create_batch_job(batch_id, total_files):
+    """Create a new batch job"""
+    BATCH_JOBS[batch_id] = {
+        'total_files': total_files,
+        'processed_files': 0,
+        'results': [],
+        'errors': [],
+        'status': 'processing',
+        'start_time': time.time(),
+        'progress': 0
+    }
+
+def update_batch_progress(batch_id, filename, status, result=None, error=None):
+    """Update batch processing progress"""
+    if batch_id in BATCH_JOBS:
+        job = BATCH_JOBS[batch_id]
+        job['processed_files'] += 1
+        job['progress'] = (job['processed_files'] / job['total_files']) * 100
+        
+        if result:
+            job['results'].append({
+                'filename': filename,
+                'original_image': result['original_image'],
+                'processed_image': result['processed_image'],
+                'processing_time': result['processing_time']
+            })
+        
+        if error:
+            job['errors'].append({
+                'filename': filename,
+                'error': error
+            })
+        
+        if job['processed_files'] >= job['total_files']:
+            job['status'] = 'completed'
+            job['end_time'] = time.time()
+            job['total_time'] = job['end_time'] - job['start_time']
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -102,6 +154,78 @@ def cleanup_old_files():
                             os.remove(filepath)
                         except OSError:
                             pass
+
+def process_single_image(file_data, batch_id, original_filename):
+    """Process a single image in batch mode"""
+    try:
+        start_time = time.time()
+        
+        # Generate secure filename
+        secure_filename_gen = generate_secure_filename(original_filename)
+        filepath = safe_join(app.config['UPLOAD_FOLDER'], secure_filename_gen)
+        
+        if filepath is None:
+            raise Exception("Invalid file path")
+        
+        # Save the uploaded file
+        with open(filepath, 'wb') as f:
+            f.write(file_data)
+        
+        # Optimize image size for faster processing
+        optimized_filepath = optimize_image_size(filepath)
+        
+        # Remove background
+        output_filename = f"no_bg_{secure_filename_gen}"
+        output_path = safe_join(app.config['OUTPUT_FOLDER'], output_filename)
+        
+        if output_path is None:
+            raise Exception("Invalid output path")
+        
+        # Use optimized backgroundremover with cached model
+        with open(optimized_filepath, 'rb') as input_file:
+            input_data = input_file.read()
+        
+        # Remove background using optimized settings
+        output_data = bg.remove(
+            input_data,
+            model_name='u2net',
+            alpha_matting=app.config['ENABLE_ALPHA_MATTING'],
+            alpha_matting_foreground_threshold=240,
+            alpha_matting_background_threshold=10,
+            alpha_matting_erode_structure_size=10,
+            alpha_matting_base_size=1000
+        )
+        
+        # Save the processed image
+        with open(output_path, 'wb') as output_file:
+            output_file.write(output_data)
+        
+        # Clean up optimized file if it was created
+        if optimized_filepath != filepath and os.path.exists(optimized_filepath):
+            os.remove(optimized_filepath)
+        
+        processing_time = time.time() - start_time
+        
+        result = {
+            'original_image': f'/uploads/{secure_filename_gen}',
+            'processed_image': f'/outputs/{output_filename}',
+            'processing_time': round(processing_time, 2)
+        }
+        
+        # Update batch progress
+        update_batch_progress(batch_id, original_filename, 'completed', result=result)
+        
+        return result
+        
+    except Exception as e:
+        # Update batch progress with error
+        update_batch_progress(batch_id, original_filename, 'error', error=str(e))
+        
+        # Clean up uploaded file if processing fails
+        if 'filepath' in locals() and os.path.exists(filepath):
+            os.remove(filepath)
+        
+        raise e
 
 def optimize_image_size(image_path, max_size=None):
     """Optimize image size for faster processing"""
@@ -225,6 +349,79 @@ def upload_file():
             return jsonify({'error': f'Error processing image: {str(e)}'}), 500
     
     return jsonify({'error': 'Invalid file type'}), 400
+
+@app.route('/batch-upload', methods=['POST'])
+def batch_upload():
+    """Handle batch upload of multiple images"""
+    # Clean up old files for security
+    cleanup_old_files()
+    
+    if 'files[]' not in request.files:
+        return jsonify({'error': 'No files uploaded'}), 400
+    
+    files = request.files.getlist('files[]')
+    
+    if not files or all(file.filename == '' for file in files):
+        return jsonify({'error': 'No files selected'}), 400
+    
+    # Validate all files
+    valid_files = []
+    for file in files:
+        if file.filename:
+            is_valid, error_message = validate_file_security(file)
+            if is_valid and allowed_file(file.filename):
+                valid_files.append(file)
+            else:
+                return jsonify({'error': f'Invalid file {file.filename}: {error_message}'}), 400
+    
+    if not valid_files:
+        return jsonify({'error': 'No valid files found'}), 400
+    
+    # Generate batch ID
+    batch_id = generate_batch_id()
+    create_batch_job(batch_id, len(valid_files))
+    
+    # Process files in parallel
+    def process_files_parallel():
+        with concurrent.futures.ThreadPoolExecutor(max_workers=min(len(valid_files), 4)) as executor:
+            futures = []
+            for file in valid_files:
+                file_data = file.read()
+                future = executor.submit(process_single_image, file_data, batch_id, file.filename)
+                futures.append(future)
+            
+            # Wait for all futures to complete
+            concurrent.futures.wait(futures)
+    
+    # Start processing in background thread
+    processing_thread = threading.Thread(target=process_files_parallel)
+    processing_thread.daemon = True
+    processing_thread.start()
+    
+    return jsonify({
+        'success': True,
+        'batch_id': batch_id,
+        'total_files': len(valid_files),
+        'message': f'Started processing {len(valid_files)} images in parallel'
+    })
+
+@app.route('/batch-status/<batch_id>')
+def batch_status(batch_id):
+    """Get batch processing status"""
+    if batch_id not in BATCH_JOBS:
+        return jsonify({'error': 'Batch not found'}), 404
+    
+    job = BATCH_JOBS[batch_id]
+    return jsonify({
+        'batch_id': batch_id,
+        'status': job['status'],
+        'progress': job['progress'],
+        'total_files': job['total_files'],
+        'processed_files': job['processed_files'],
+        'results': job['results'],
+        'errors': job['errors'],
+        'total_time': job.get('total_time', 0)
+    })
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):

@@ -24,17 +24,21 @@
                 <div class="upload-area" id="uploadArea">
                     <div class="upload-content">
                         <i class="fas fa-cloud-upload-alt"></i>
-                        <h3>Drop your image here</h3>
-                        <p>or click to browse</p>
+                        <h3>Drop your images here</h3>
+                        <p>or click to browse (supports multiple files)</p>
                         <span class="file-types">Supports: JPG, PNG, GIF, BMP, TIFF</span>
                     </div>
-                    <input type="file" id="fileInput" accept="image/*" hidden>
+                    <input type="file" id="fileInput" accept="image/*" multiple hidden>
                 </div>
                 
-                <div class="upload-button">
+                <div class="upload-buttons">
                     <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
                         <i class="fas fa-upload"></i>
-                        Choose Image
+                        Choose Images
+                    </button>
+                    <button class="btn btn-secondary" onclick="toggleUploadMode()">
+                        <i class="fas fa-single-image"></i>
+                        Single Image Mode
                     </button>
                 </div>
             </div>
@@ -44,6 +48,39 @@
                     <div class="spinner"></div>
                     <h3>Processing your image...</h3>
                     <p>This may take a few moments</p>
+                </div>
+            </div>
+
+            <div class="batch-processing-section" id="batchProcessingSection" style="display: none;">
+                <div class="batch-processing-content">
+                    <div class="batch-header">
+                        <h3>Batch Processing</h3>
+                        <div class="batch-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="batchProgressFill"></div>
+                            </div>
+                            <span id="batchProgressText">0%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="batch-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Total Files:</span>
+                            <span class="stat-value" id="batchTotalFiles">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Processed:</span>
+                            <span class="stat-value" id="batchProcessedFiles">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Errors:</span>
+                            <span class="stat-value" id="batchErrors">0</span>
+                        </div>
+                    </div>
+                    
+                    <div class="batch-status" id="batchStatus">
+                        <p>Starting batch processing...</p>
+                    </div>
                 </div>
             </div>
 
@@ -80,6 +117,37 @@
                             </button>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <div class="batch-results-section" id="batchResultsSection" style="display: none;">
+                <div class="results-header">
+                    <h2>Batch Results</h2>
+                    <button class="btn btn-secondary" onclick="resetApp()">
+                        <i class="fas fa-plus"></i>
+                        Process More Images
+                    </button>
+                </div>
+                
+                <div class="batch-summary" id="batchSummary">
+                    <div class="summary-stats">
+                        <div class="summary-item success">
+                            <i class="fas fa-check-circle"></i>
+                            <span id="batchSuccessCount">0</span> successful
+                        </div>
+                        <div class="summary-item error">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <span id="batchErrorCount">0</span> errors
+                        </div>
+                        <div class="summary-item time">
+                            <i class="fas fa-clock"></i>
+                            <span id="batchTotalTime">0</span>s total
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="batch-images" id="batchImages">
+                    <!-- Batch results will be populated here -->
                 </div>
             </div>
 

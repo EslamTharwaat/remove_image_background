@@ -1,8 +1,11 @@
 // Global variables
 let currentProcessedImageUrl = '';
+let currentBatchId = null;
+let batchStatusInterval = null;
+let isSingleMode = false;
 
 // DOM elements (will be initialized when DOM is loaded)
-let uploadArea, fileInput, uploadSection, processingSection, resultsSection, errorSection, originalImage, processedImage, errorMessage;
+let uploadArea, fileInput, uploadSection, processingSection, batchProcessingSection, resultsSection, batchResultsSection, errorSection, originalImage, processedImage, errorMessage;
 
 // Event listeners
 document.addEventListener('DOMContentLoaded', function() {
@@ -16,14 +19,16 @@ function initializeElements() {
     fileInput = document.getElementById('fileInput');
     uploadSection = document.getElementById('uploadSection');
     processingSection = document.getElementById('processingSection');
+    batchProcessingSection = document.getElementById('batchProcessingSection');
     resultsSection = document.getElementById('resultsSection');
+    batchResultsSection = document.getElementById('batchResultsSection');
     errorSection = document.getElementById('errorSection');
     originalImage = document.getElementById('originalImage');
     processedImage = document.getElementById('processedImage');
     errorMessage = document.getElementById('errorMessage');
     
     // Check if all elements are found
-    if (!uploadArea || !fileInput || !uploadSection || !processingSection || !resultsSection || !errorSection || !originalImage || !processedImage || !errorMessage) {
+    if (!uploadArea || !fileInput || !uploadSection || !processingSection || !batchProcessingSection || !resultsSection || !batchResultsSection || !errorSection || !originalImage || !processedImage || !errorMessage) {
         console.error('Some DOM elements could not be found. Please check the HTML structure.');
         return false;
     }
@@ -87,6 +92,20 @@ function handleDrop(event) {
 }
 
 function processFile(file) {
+    // Check if we're in single mode or batch mode
+    if (isSingleMode) {
+        processSingleFile(file);
+    } else {
+        // For batch mode, we'll handle multiple files
+        if (fileInput.files.length === 1) {
+            processSingleFile(file);
+        } else {
+            processBatchFiles();
+        }
+    }
+}
+
+function processSingleFile(file) {
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp', 'image/tiff'];
     if (!allowedTypes.includes(file.type)) {
@@ -126,19 +145,185 @@ function processFile(file) {
     });
 }
 
+function processBatchFiles() {
+    const files = Array.from(fileInput.files);
+    
+    if (files.length === 0) {
+        showError('No files selected.');
+        return;
+    }
+    
+    // Validate all files
+    for (let file of files) {
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp', 'image/tiff'];
+        if (!allowedTypes.includes(file.type)) {
+            showError(`Invalid file type: ${file.name}. Please select valid image files.`);
+            return;
+        }
+        
+        if (file.size > 16 * 1024 * 1024) {
+            showError(`File too large: ${file.name}. Maximum size is 16MB.`);
+            return;
+        }
+    }
+    
+    // Show batch processing section
+    showBatchProcessing();
+    
+    // Create FormData for batch upload
+    const formData = new FormData();
+    files.forEach(file => {
+        formData.append('files[]', file);
+    });
+    
+    fetch('/batch-upload', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            currentBatchId = data.batch_id;
+            startBatchStatusPolling();
+        } else {
+            showError(data.error || 'An error occurred while starting batch processing.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showError('Network error. Please check your connection and try again.');
+    });
+}
+
+function startBatchStatusPolling() {
+    if (batchStatusInterval) {
+        clearInterval(batchStatusInterval);
+    }
+    
+    batchStatusInterval = setInterval(() => {
+        fetch(`/batch-status/${currentBatchId}`)
+        .then(response => response.json())
+        .then(data => {
+            updateBatchProgress(data);
+            
+            if (data.status === 'completed') {
+                clearInterval(batchStatusInterval);
+                showBatchResults(data);
+            }
+        })
+        .catch(error => {
+            console.error('Error polling batch status:', error);
+        });
+    }, 1000); // Poll every second
+}
+
+function updateBatchProgress(data) {
+    const progressFill = document.getElementById('batchProgressFill');
+    const progressText = document.getElementById('batchProgressText');
+    const totalFiles = document.getElementById('batchTotalFiles');
+    const processedFiles = document.getElementById('batchProcessedFiles');
+    const errors = document.getElementById('batchErrors');
+    const status = document.getElementById('batchStatus');
+    
+    if (progressFill) progressFill.style.width = `${data.progress}%`;
+    if (progressText) progressText.textContent = `${Math.round(data.progress)}%`;
+    if (totalFiles) totalFiles.textContent = data.total_files;
+    if (processedFiles) processedFiles.textContent = data.processed_files;
+    if (errors) errors.textContent = data.errors.length;
+    
+    if (status) {
+        if (data.status === 'processing') {
+            status.innerHTML = `<p>Processing ${data.processed_files}/${data.total_files} images...</p>`;
+        } else if (data.status === 'completed') {
+            status.innerHTML = `<p>✅ Batch processing completed!</p>`;
+        }
+    }
+}
+
+function showBatchResults(data) {
+    // Update summary stats
+    document.getElementById('batchSuccessCount').textContent = data.results.length;
+    document.getElementById('batchErrorCount').textContent = data.errors.length;
+    document.getElementById('batchTotalTime').textContent = Math.round(data.total_time);
+    
+    // Populate batch images
+    const batchImages = document.getElementById('batchImages');
+    batchImages.innerHTML = '';
+    
+    data.results.forEach(result => {
+        const imageItem = document.createElement('div');
+        imageItem.className = 'batch-image-item';
+        imageItem.innerHTML = `
+            <div class="batch-image-header">
+                <span class="batch-image-name">${result.filename}</span>
+                <span class="batch-image-time">${result.processing_time}s</span>
+            </div>
+            <div class="batch-image-comparison">
+                <div class="batch-image-original">
+                    <img src="${result.original_image}" alt="Original">
+                </div>
+                <div class="batch-image-arrow">
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+                <div class="batch-image-processed">
+                    <img src="${result.processed_image}" alt="Processed">
+                </div>
+            </div>
+            <div class="batch-image-download">
+                <button class="btn btn-success" onclick="downloadBatchImage('${result.processed_image}', '${result.filename}')">
+                    <i class="fas fa-download"></i>
+                    Download
+                </button>
+            </div>
+        `;
+        batchImages.appendChild(imageItem);
+    });
+    
+    // Show batch results section
+    showBatchResultsSection();
+}
+
+function downloadBatchImage(imageUrl, filename) {
+    const link = document.createElement('a');
+    link.href = imageUrl;
+    link.download = `no_bg_${filename}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function toggleUploadMode() {
+    isSingleMode = !isSingleMode;
+    const button = document.querySelector('.btn-secondary');
+    
+    if (isSingleMode) {
+        button.innerHTML = '<i class="fas fa-images"></i> Batch Mode';
+        fileInput.removeAttribute('multiple');
+        uploadArea.querySelector('h3').textContent = 'Drop your image here';
+        uploadArea.querySelector('p').textContent = 'or click to browse';
+    } else {
+        button.innerHTML = '<i class="fas fa-single-image"></i> Single Image Mode';
+        fileInput.setAttribute('multiple', '');
+        uploadArea.querySelector('h3').textContent = 'Drop your images here';
+        uploadArea.querySelector('p').textContent = 'or click to browse (supports multiple files)';
+    }
+}
+
 function showProcessing() {
-    if (!uploadSection || !processingSection || !resultsSection || !errorSection) {
+    if (!uploadSection || !processingSection || !batchProcessingSection || !resultsSection || !batchResultsSection || !errorSection) {
         console.error('DOM elements not initialized');
         return;
     }
     uploadSection.style.display = 'none';
     processingSection.style.display = 'block';
+    batchProcessingSection.style.display = 'none';
     resultsSection.style.display = 'none';
+    batchResultsSection.style.display = 'none';
     errorSection.style.display = 'none';
 }
 
 function showResults(originalImageUrl, processedImageUrl) {
-    if (!uploadSection || !processingSection || !resultsSection || !errorSection || !originalImage || !processedImage) {
+    if (!uploadSection || !processingSection || !batchProcessingSection || !resultsSection || !batchResultsSection || !errorSection || !originalImage || !processedImage) {
         console.error('DOM elements not initialized');
         return;
     }
@@ -150,6 +335,8 @@ function showResults(originalImageUrl, processedImageUrl) {
     // Show results section
     uploadSection.style.display = 'none';
     processingSection.style.display = 'none';
+    batchProcessingSection.style.display = 'none';
+    batchResultsSection.style.display = 'none';
     resultsSection.style.display = 'block';
     errorSection.style.display = 'none';
     
@@ -157,8 +344,44 @@ function showResults(originalImageUrl, processedImageUrl) {
     resultsSection.scrollIntoView({ behavior: 'smooth' });
 }
 
+function showBatchProcessing() {
+    if (!uploadSection || !processingSection || !batchProcessingSection || !resultsSection || !batchResultsSection || !errorSection) {
+        console.error('DOM elements not initialized');
+        return;
+    }
+    
+    // Show batch processing section
+    uploadSection.style.display = 'none';
+    processingSection.style.display = 'none';
+    resultsSection.style.display = 'none';
+    batchResultsSection.style.display = 'none';
+    errorSection.style.display = 'none';
+    batchProcessingSection.style.display = 'block';
+    
+    // Scroll to batch processing
+    batchProcessingSection.scrollIntoView({ behavior: 'smooth' });
+}
+
+function showBatchResultsSection() {
+    if (!uploadSection || !processingSection || !batchProcessingSection || !resultsSection || !batchResultsSection || !errorSection) {
+        console.error('DOM elements not initialized');
+        return;
+    }
+    
+    // Show batch results section
+    uploadSection.style.display = 'none';
+    processingSection.style.display = 'none';
+    batchProcessingSection.style.display = 'none';
+    resultsSection.style.display = 'none';
+    errorSection.style.display = 'none';
+    batchResultsSection.style.display = 'block';
+    
+    // Scroll to batch results
+    batchResultsSection.scrollIntoView({ behavior: 'smooth' });
+}
+
 function showError(message) {
-    if (!uploadSection || !processingSection || !resultsSection || !errorSection || !errorMessage) {
+    if (!uploadSection || !processingSection || !batchProcessingSection || !resultsSection || !batchResultsSection || !errorSection || !errorMessage) {
         console.error('DOM elements not initialized');
         return;
     }
@@ -167,12 +390,14 @@ function showError(message) {
     
     uploadSection.style.display = 'none';
     processingSection.style.display = 'none';
+    batchProcessingSection.style.display = 'none';
     resultsSection.style.display = 'none';
+    batchResultsSection.style.display = 'none';
     errorSection.style.display = 'block';
 }
 
 function resetApp() {
-    if (!uploadSection || !processingSection || !resultsSection || !errorSection || !fileInput) {
+    if (!uploadSection || !processingSection || !batchProcessingSection || !resultsSection || !batchResultsSection || !errorSection || !fileInput) {
         console.error('DOM elements not initialized');
         return;
     }
@@ -180,13 +405,26 @@ function resetApp() {
     // Reset file input
     fileInput.value = '';
     
-    // Reset current processed image URL
+    // Reset current processed image URL and batch ID
     currentProcessedImageUrl = '';
+    currentBatchId = null;
+    
+    // Clear batch status interval
+    if (batchStatusInterval) {
+        clearInterval(batchStatusInterval);
+        batchStatusInterval = null;
+    }
+    
+    // Reset to batch mode
+    isSingleMode = false;
+    if (fileInput) fileInput.setAttribute('multiple', '');
     
     // Show upload section
     uploadSection.style.display = 'block';
     processingSection.style.display = 'none';
+    batchProcessingSection.style.display = 'none';
     resultsSection.style.display = 'none';
+    batchResultsSection.style.display = 'none';
     errorSection.style.display = 'none';
     
     // Scroll to top
