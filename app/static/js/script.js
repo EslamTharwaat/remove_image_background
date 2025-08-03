@@ -5,29 +5,14 @@ let currentBatchId = null;
 let batchStatusInterval = null;
 let isSingleMode = false;
 
-// Quality settings presets
-const QUALITY_PRESETS = {
-    fast: {
-        alpha_matting: false,
-        foreground_threshold: 240,
-        background_threshold: 10,
-        erode_size: 10,
-        base_size: 1000
-    },
-    balanced: {
-        alpha_matting: true,
-        foreground_threshold: 240,
-        background_threshold: 10,
-        erode_size: 10,
-        base_size: 1000
-    },
-    high: {
-        alpha_matting: true,
-        foreground_threshold: 240,
-        background_threshold: 10,
-        erode_size: 15,
-        base_size: 1500
-    }
+// Default settings (fallback if no settings are saved)
+const DEFAULT_SETTINGS = {
+    ai_model: 'u2net',
+    alpha_matting: false,
+    foreground_threshold: 240,
+    background_threshold: 10,
+    erode_size: 10,
+    base_size: 1000
 };
 
 // DOM elements (will be initialized when DOM is loaded)
@@ -397,61 +382,35 @@ function toggleUploadMode() {
 }
 
 function getQualitySettings() {
+    // Load settings from localStorage
+    const savedSettings = localStorage.getItem('backgroundRemoverSettings');
+    
+    if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        return {
+            alpha_matting: settings.alpha_matting || DEFAULT_SETTINGS.alpha_matting,
+            foreground_threshold: settings.foreground_threshold || DEFAULT_SETTINGS.foreground_threshold,
+            background_threshold: settings.background_threshold || DEFAULT_SETTINGS.background_threshold,
+            erode_size: settings.erode_size || DEFAULT_SETTINGS.erode_size,
+            base_size: settings.base_size || DEFAULT_SETTINGS.base_size,
+            ai_model: settings.ai_model || DEFAULT_SETTINGS.ai_model
+        };
+    }
+    
+    // Return default settings if none saved
     return {
-        alpha_matting: document.getElementById('alphaMatting').checked,
-        foreground_threshold: parseInt(document.getElementById('foregroundThreshold').value),
-        background_threshold: parseInt(document.getElementById('backgroundThreshold').value),
-        erode_size: parseInt(document.getElementById('erodeSize').value),
-        base_size: parseInt(document.getElementById('baseSize').value),
-        ai_model: document.getElementById('aiModel').value
+        alpha_matting: DEFAULT_SETTINGS.alpha_matting,
+        foreground_threshold: DEFAULT_SETTINGS.foreground_threshold,
+        background_threshold: DEFAULT_SETTINGS.background_threshold,
+        erode_size: DEFAULT_SETTINGS.erode_size,
+        base_size: DEFAULT_SETTINGS.base_size,
+        ai_model: DEFAULT_SETTINGS.ai_model
     };
 }
 
-function setQualityPreset(preset) {
-    const settings = QUALITY_PRESETS[preset];
-    if (!settings) return;
-    
-    document.getElementById('alphaMatting').checked = settings.alpha_matting;
-    document.getElementById('foregroundThreshold').value = settings.foreground_threshold;
-    document.getElementById('backgroundThreshold').value = settings.background_threshold;
-    document.getElementById('erodeSize').value = settings.erode_size;
-    document.getElementById('baseSize').value = settings.base_size;
-    
-    // Update display values
-    updateSliderValues();
-    
-    // Show feedback
-    showSuccessNotification(`Quality preset "${preset}" applied`);
-}
-
-function updateSliderValues() {
-    document.getElementById('foregroundThresholdValue').textContent = document.getElementById('foregroundThreshold').value;
-    document.getElementById('backgroundThresholdValue').textContent = document.getElementById('backgroundThreshold').value;
-    document.getElementById('erodeSizeValue').textContent = document.getElementById('erodeSize').value;
-    document.getElementById('baseSizeValue').textContent = document.getElementById('baseSize').value;
-}
-
 function setupQualitySettings() {
-    // Add event listeners for sliders
-    const sliders = ['foregroundThreshold', 'backgroundThreshold', 'erodeSize', 'baseSize'];
-    sliders.forEach(id => {
-        const slider = document.getElementById(id);
-        if (slider) {
-            slider.addEventListener('input', updateSliderValues);
-        }
-    });
-    
-    // Add event listeners for reprocess sliders
-    const reprocessSliders = ['reprocessForegroundThreshold', 'reprocessBackgroundThreshold', 'reprocessErodeSize', 'reprocessBaseSize'];
-    reprocessSliders.forEach(id => {
-        const slider = document.getElementById(id);
-        if (slider) {
-            slider.addEventListener('input', updateReprocessSliderValues);
-        }
-    });
-    
-    // Initialize slider values
-    updateSliderValues();
+    // This function is kept for compatibility but no longer needed
+    // Settings are now handled in the dedicated settings page
 }
 
 function showReprocessModal() {
@@ -475,16 +434,18 @@ function hideReprocessModal() {
 }
 
 function copyCurrentSettingsToReprocess() {
+    // Get current settings from localStorage
+    const currentSettings = getQualitySettings();
+    
     // Copy AI model
-    const currentAiModel = document.getElementById('aiModel').value;
-    document.getElementById('reprocessAiModel').value = currentAiModel;
+    document.getElementById('reprocessAiModel').value = currentSettings.ai_model;
     
     // Copy quality settings
-    document.getElementById('reprocessAlphaMatting').checked = document.getElementById('alphaMatting').checked;
-    document.getElementById('reprocessForegroundThreshold').value = document.getElementById('foregroundThreshold').value;
-    document.getElementById('reprocessBackgroundThreshold').value = document.getElementById('backgroundThreshold').value;
-    document.getElementById('reprocessErodeSize').value = document.getElementById('erodeSize').value;
-    document.getElementById('reprocessBaseSize').value = document.getElementById('baseSize').value;
+    document.getElementById('reprocessAlphaMatting').checked = currentSettings.alpha_matting;
+    document.getElementById('reprocessForegroundThreshold').value = currentSettings.foreground_threshold;
+    document.getElementById('reprocessBackgroundThreshold').value = currentSettings.background_threshold;
+    document.getElementById('reprocessErodeSize').value = currentSettings.erode_size;
+    document.getElementById('reprocessBaseSize').value = currentSettings.base_size;
     
     // Update reprocess slider values
     updateReprocessSliderValues();

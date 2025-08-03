@@ -23,6 +23,11 @@ def init_routes(app, config):
         """Main page"""
         return render_template('index.html')
     
+    @main.route('/settings')
+    def settings():
+        """Settings page"""
+        return render_template('settings.html')
+    
     @main.route('/upload', methods=['POST'])
     def upload_file():
         """Handle single image upload and background removal"""

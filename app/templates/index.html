@@ -19,6 +19,17 @@
             <p class="subtitle">Remove image backgrounds with AI-powered precision</p>
         </header>
 
+        <nav class="navigation">
+            <a href="/" class="nav-link active">
+                <i class="fas fa-home"></i>
+                Home
+            </a>
+            <a href="/settings" class="nav-link">
+                <i class="fas fa-cog"></i>
+                Settings
+            </a>
+        </nav>
+
         <main class="main-content">
             <div class="upload-section" id="uploadSection">
                 <div class="upload-area" id="uploadArea">
@@ -42,58 +53,10 @@
                     </button>
                 </div>
                 
-                <div class="quality-settings" id="qualitySettings">
-                    <h4>AI Model & Quality Settings</h4>
-                    
-                    <div class="ai-model-selection">
-                        <label for="aiModel">AI Model:</label>
-                        <select id="aiModel" name="aiModel">
-                            <option value="u2net">U²-Net (General Purpose)</option>
-                            <option value="u2netp">U²-Net+ (Faster)</option>
-                            <option value="u2net_human_seg">U²-Net Human Segmentation</option>
-                            <option value="u2net_cloth_seg">U²-Net Clothing Segmentation</option>
-                        </select>
-                        <small>Choose the best AI model for your image type</small>
-                    </div>
-                    
-                    <div class="settings-grid">
-                        <div class="setting-item">
-                            <label for="alphaMatting">
-                                <input type="checkbox" id="alphaMatting" name="alphaMatting">
-                                Enable Alpha Matting (Better Quality)
-                            </label>
-                            <small>Improves edge quality but slower processing</small>
-                        </div>
-                        
-                        <div class="setting-item">
-                            <label for="foregroundThreshold">Foreground Threshold:</label>
-                            <input type="range" id="foregroundThreshold" min="0" max="255" value="240" class="slider">
-                            <span class="slider-value" id="foregroundThresholdValue">240</span>
-                        </div>
-                        
-                        <div class="setting-item">
-                            <label for="backgroundThreshold">Background Threshold:</label>
-                            <input type="range" id="backgroundThreshold" min="0" max="255" value="10" class="slider">
-                            <span class="slider-value" id="backgroundThresholdValue">10</span>
-                        </div>
-                        
-                        <div class="setting-item">
-                            <label for="erodeSize">Erode Size:</label>
-                            <input type="range" id="erodeSize" min="1" max="20" value="10" class="slider">
-                            <span class="slider-value" id="erodeSizeValue">10</span>
-                        </div>
-                        
-                        <div class="setting-item">
-                            <label for="baseSize">Base Size:</label>
-                            <input type="range" id="baseSize" min="500" max="2000" step="100" value="1000" class="slider">
-                            <span class="slider-value" id="baseSizeValue">1000</span>
-                        </div>
-                    </div>
-                    
-                    <div class="quality-presets">
-                        <button class="btn btn-sm btn-outline" onclick="setQualityPreset('fast')">Fast</button>
-                        <button class="btn btn-sm btn-outline" onclick="setQualityPreset('balanced')">Balanced</button>
-                        <button class="btn btn-sm btn-outline" onclick="setQualityPreset('high')">High Quality</button>
+                <div class="settings-info">
+                    <div class="settings-info-content">
+                        <i class="fas fa-info-circle"></i>
+                        <p>Configure AI models and quality settings in the <a href="/settings" class="settings-link">Settings</a> page</p>
                     </div>
                 </div>
             </div>
