@@ -503,6 +503,92 @@ def batch_status(batch_id):
         'individual_progress': job.get('individual_progress', {})
     })
 
+@app.route('/reprocess', methods=['POST'])
+def reprocess_image():
+    """Reprocess an image with different settings"""
+    # Clean up old files for security
+    cleanup_old_files()
+    
+    # Get image path and settings from request
+    image_path = request.form.get('image_path')
+    if not image_path:
+        return jsonify({'error': 'No image path provided'}), 400
+    
+    # Validate image path for security
+    if not image_path.startswith('/uploads/') or '..' in image_path or '/' in image_path[9:]:
+        return jsonify({'error': 'Invalid image path'}), 400
+    
+    # Get quality settings from request
+    quality_settings = {
+        'alpha_matting': request.form.get('alpha_matting', 'false').lower() == 'true',
+        'foreground_threshold': int(request.form.get('foreground_threshold', app.config['DEFAULT_ALPHA_MATTING_FOREGROUND_THRESHOLD'])),
+        'background_threshold': int(request.form.get('background_threshold', app.config['DEFAULT_ALPHA_MATTING_BACKGROUND_THRESHOLD'])),
+        'erode_size': int(request.form.get('erode_size', app.config['DEFAULT_ALPHA_MATTING_ERODE_SIZE'])),
+        'base_size': int(request.form.get('base_size', app.config['DEFAULT_ALPHA_MATTING_BASE_SIZE']))
+    }
+    
+    # Get AI model selection
+    ai_model = request.form.get('ai_model', app.config['DEFAULT_MODEL'])
+    if ai_model not in app.config['AVAILABLE_MODELS']:
+        ai_model = app.config['DEFAULT_MODEL']
+    
+    try:
+        # Extract filename from path
+        filename = image_path.split('/')[-1]
+        filepath = safe_join(app.config['UPLOAD_FOLDER'], filename)
+        
+        if filepath is None or not os.path.exists(filepath):
+            return jsonify({'error': 'Image file not found'}), 404
+        
+        start_time = time.time()
+        
+        # Optimize image size for faster processing
+        optimized_filepath = optimize_image_size(filepath)
+        
+        # Remove background
+        output_filename = f"no_bg_{filename}"
+        output_path = safe_join(app.config['OUTPUT_FOLDER'], output_filename)
+        
+        if output_path is None:
+            return jsonify({'error': 'Invalid output path'}), 400
+        
+        # Use optimized backgroundremover with new settings
+        with open(optimized_filepath, 'rb') as input_file:
+            input_data = input_file.read()
+        
+        # Remove background using AI model and quality settings
+        output_data = bg.remove(
+            input_data,
+            model_name=ai_model,
+            alpha_matting=quality_settings['alpha_matting'],
+            alpha_matting_foreground_threshold=quality_settings['foreground_threshold'],
+            alpha_matting_background_threshold=quality_settings['background_threshold'],
+            alpha_matting_erode_structure_size=quality_settings['erode_size'],
+            alpha_matting_base_size=quality_settings['base_size']
+        )
+        
+        # Save the processed image
+        with open(output_path, 'wb') as output_file:
+            output_file.write(output_data)
+        
+        # Clean up optimized file if it was created
+        if optimized_filepath != filepath and os.path.exists(optimized_filepath):
+            os.remove(optimized_filepath)
+        
+        processing_time = time.time() - start_time
+        
+        return jsonify({
+            'success': True,
+            'original_image': image_path,
+            'processed_image': f'/outputs/{output_filename}',
+            'message': f'Image reprocessed successfully in {processing_time:.2f} seconds!',
+            'processing_time': round(processing_time, 2),
+            'ai_model': ai_model
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Error reprocessing image: {str(e)}'}), 500
+
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     # Validate filename for security

@@ -1,5 +1,6 @@
 // Global variables
 let currentProcessedImageUrl = '';
+let currentOriginalImageUrl = '';
 let currentBatchId = null;
 let batchStatusInterval = null;
 let isSingleMode = false;
@@ -172,6 +173,7 @@ function processSingleFile(file) {
         if (data.success) {
             showResults(data.original_image, data.processed_image);
             currentProcessedImageUrl = data.processed_image;
+            currentOriginalImageUrl = data.original_image;
         } else {
             showError(data.error || 'An error occurred while processing the image.');
         }
@@ -439,8 +441,127 @@ function setupQualitySettings() {
         }
     });
     
+    // Add event listeners for reprocess sliders
+    const reprocessSliders = ['reprocessForegroundThreshold', 'reprocessBackgroundThreshold', 'reprocessErodeSize', 'reprocessBaseSize'];
+    reprocessSliders.forEach(id => {
+        const slider = document.getElementById(id);
+        if (slider) {
+            slider.addEventListener('input', updateReprocessSliderValues);
+        }
+    });
+    
     // Initialize slider values
     updateSliderValues();
+}
+
+function showReprocessModal() {
+    if (!currentOriginalImageUrl) {
+        showError('No image available for reprocessing.');
+        return;
+    }
+    
+    // Set the preview image
+    document.getElementById('reprocessPreview').src = currentOriginalImageUrl;
+    
+    // Copy current settings to reprocess modal
+    copyCurrentSettingsToReprocess();
+    
+    // Show the modal
+    document.getElementById('reprocessModal').style.display = 'flex';
+}
+
+function hideReprocessModal() {
+    document.getElementById('reprocessModal').style.display = 'none';
+}
+
+function copyCurrentSettingsToReprocess() {
+    // Copy AI model
+    const currentAiModel = document.getElementById('aiModel').value;
+    document.getElementById('reprocessAiModel').value = currentAiModel;
+    
+    // Copy quality settings
+    document.getElementById('reprocessAlphaMatting').checked = document.getElementById('alphaMatting').checked;
+    document.getElementById('reprocessForegroundThreshold').value = document.getElementById('foregroundThreshold').value;
+    document.getElementById('reprocessBackgroundThreshold').value = document.getElementById('backgroundThreshold').value;
+    document.getElementById('reprocessErodeSize').value = document.getElementById('erodeSize').value;
+    document.getElementById('reprocessBaseSize').value = document.getElementById('baseSize').value;
+    
+    // Update reprocess slider values
+    updateReprocessSliderValues();
+}
+
+function updateReprocessSliderValues() {
+    document.getElementById('reprocessForegroundThresholdValue').textContent = document.getElementById('reprocessForegroundThreshold').value;
+    document.getElementById('reprocessBackgroundThresholdValue').textContent = document.getElementById('reprocessBackgroundThreshold').value;
+    document.getElementById('reprocessErodeSizeValue').textContent = document.getElementById('reprocessErodeSize').value;
+    document.getElementById('reprocessBaseSizeValue').textContent = document.getElementById('reprocessBaseSize').value;
+}
+
+function setReprocessQualityPreset(preset) {
+    const settings = QUALITY_PRESETS[preset];
+    if (!settings) return;
+    
+    document.getElementById('reprocessAlphaMatting').checked = settings.alpha_matting;
+    document.getElementById('reprocessForegroundThreshold').value = settings.foreground_threshold;
+    document.getElementById('reprocessBackgroundThreshold').value = settings.background_threshold;
+    document.getElementById('reprocessErodeSize').value = settings.erode_size;
+    document.getElementById('reprocessBaseSize').value = settings.base_size;
+    
+    // Update display values
+    updateReprocessSliderValues();
+    
+    // Show feedback
+    showSuccessNotification(`Quality preset "${preset}" applied`);
+}
+
+function reprocessImage() {
+    if (!currentOriginalImageUrl) {
+        showError('No image available for reprocessing.');
+        return;
+    }
+    
+    // Show processing section
+    showProcessing();
+    hideReprocessModal();
+    
+    // Get reprocess settings
+    const qualitySettings = {
+        alpha_matting: document.getElementById('reprocessAlphaMatting').checked,
+        foreground_threshold: parseInt(document.getElementById('reprocessForegroundThreshold').value),
+        background_threshold: parseInt(document.getElementById('reprocessBackgroundThreshold').value),
+        erode_size: parseInt(document.getElementById('reprocessErodeSize').value),
+        base_size: parseInt(document.getElementById('reprocessBaseSize').value),
+        ai_model: document.getElementById('reprocessAiModel').value
+    };
+    
+    // Create FormData for reprocessing
+    const formData = new FormData();
+    formData.append('image_path', currentOriginalImageUrl);
+    formData.append('alpha_matting', qualitySettings.alpha_matting);
+    formData.append('foreground_threshold', qualitySettings.foreground_threshold);
+    formData.append('background_threshold', qualitySettings.background_threshold);
+    formData.append('erode_size', qualitySettings.erode_size);
+    formData.append('base_size', qualitySettings.base_size);
+    formData.append('ai_model', qualitySettings.ai_model);
+    
+    fetch('/reprocess', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showResults(data.original_image, data.processed_image);
+            currentProcessedImageUrl = data.processed_image;
+            showSuccessNotification(`Image reprocessed successfully with ${data.ai_model} model!`);
+        } else {
+            showError(data.error || 'An error occurred while reprocessing the image.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showError('Network error. Please check your connection and try again.');
+    });
 }
 
 function showProcessing() {
@@ -541,6 +662,7 @@ function resetApp() {
     
     // Reset current processed image URL and batch ID
     currentProcessedImageUrl = '';
+    currentOriginalImageUrl = '';
     currentBatchId = null;
     
     // Clear batch status interval
