@@ -4,11 +4,13 @@ Main routes for the background removal application
 from flask import Blueprint, render_template, request, jsonify, send_from_directory
 from app.utils.file_utils import (
     allowed_file, generate_secure_filename, validate_file_security, 
-    cleanup_old_files, ensure_directories_exist, safe_join
+    cleanup_old_files, ensure_directories_exist, safe_join,
+    is_zip_file, validate_zip_file, extract_images_from_zip
 )
 from app.services.background_remover import BackgroundRemoverService
 from app.services.batch_processor import BatchProcessor
 import os
+import tempfile
 
 # Create blueprint
 main = Blueprint('main', __name__)
@@ -137,11 +139,36 @@ def init_routes(app, config):
         valid_files = []
         for file in files:
             if file.filename:
-                is_valid, error_message = validate_file_security(file)
-                if is_valid and allowed_file(file.filename, config.ALLOWED_EXTENSIONS):
-                    valid_files.append(file)
+                # Check if it's a ZIP file
+                if is_zip_file(file.filename):
+                    is_valid, error_message = validate_zip_file(file)
+                    if is_valid:
+                        # Extract images from ZIP
+                        try:
+                            with tempfile.TemporaryDirectory() as temp_dir:
+                                extracted_files = extract_images_from_zip(file, temp_dir)
+                                # Create FileStorage-like objects for extracted files
+                                for extracted_path in extracted_files:
+                                    with open(extracted_path, 'rb') as f:
+                                        file_data = f.read()
+                                    # Create a mock file object
+                                    mock_file = type('MockFile', (), {
+                                        'filename': os.path.basename(extracted_path),
+                                        'read': lambda: file_data,
+                                        'seek': lambda pos: None
+                                    })()
+                                    valid_files.append(mock_file)
+                        except Exception as e:
+                            return jsonify({'error': f'Error processing ZIP file {file.filename}: {str(e)}'}), 400
+                    else:
+                        return jsonify({'error': f'Invalid ZIP file {file.filename}: {error_message}'}), 400
                 else:
-                    return jsonify({'error': f'Invalid file {file.filename}: {error_message}'}), 400
+                    # Regular image file
+                    is_valid, error_message = validate_file_security(file)
+                    if is_valid and allowed_file(file.filename, config.ALLOWED_EXTENSIONS):
+                        valid_files.append(file)
+                    else:
+                        return jsonify({'error': f'Invalid file {file.filename}: {error_message}'}), 400
         
         if not valid_files:
             return jsonify({'error': 'No valid files found'}), 400
