@@ -41,6 +41,49 @@
                         Single Image Mode
                     </button>
                 </div>
+                
+                <div class="quality-settings" id="qualitySettings">
+                    <h4>Quality Settings</h4>
+                    <div class="settings-grid">
+                        <div class="setting-item">
+                            <label for="alphaMatting">
+                                <input type="checkbox" id="alphaMatting" name="alphaMatting">
+                                Enable Alpha Matting (Better Quality)
+                            </label>
+                            <small>Improves edge quality but slower processing</small>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label for="foregroundThreshold">Foreground Threshold:</label>
+                            <input type="range" id="foregroundThreshold" min="0" max="255" value="240" class="slider">
+                            <span class="slider-value" id="foregroundThresholdValue">240</span>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label for="backgroundThreshold">Background Threshold:</label>
+                            <input type="range" id="backgroundThreshold" min="0" max="255" value="10" class="slider">
+                            <span class="slider-value" id="backgroundThresholdValue">10</span>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label for="erodeSize">Erode Size:</label>
+                            <input type="range" id="erodeSize" min="1" max="20" value="10" class="slider">
+                            <span class="slider-value" id="erodeSizeValue">10</span>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label for="baseSize">Base Size:</label>
+                            <input type="range" id="baseSize" min="500" max="2000" step="100" value="1000" class="slider">
+                            <span class="slider-value" id="baseSizeValue">1000</span>
+                        </div>
+                    </div>
+                    
+                    <div class="quality-presets">
+                        <button class="btn btn-sm btn-outline" onclick="setQualityPreset('fast')">Fast</button>
+                        <button class="btn btn-sm btn-outline" onclick="setQualityPreset('balanced')">Balanced</button>
+                        <button class="btn btn-sm btn-outline" onclick="setQualityPreset('high')">High Quality</button>
+                    </div>
+                </div>
             </div>
 
             <div class="processing-section" id="processingSection" style="display: none;">

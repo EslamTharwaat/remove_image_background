@@ -25,6 +25,13 @@ app.config['MAX_IMAGE_SIZE'] = 1024  # Maximum dimension for processing
 app.config['ENABLE_ALPHA_MATTING'] = False  # Disable for speed
 app.config['ENABLE_MODEL_CACHING'] = True
 
+# Background removal quality settings
+app.config['DEFAULT_ALPHA_MATTING'] = False
+app.config['DEFAULT_ALPHA_MATTING_FOREGROUND_THRESHOLD'] = 240
+app.config['DEFAULT_ALPHA_MATTING_BACKGROUND_THRESHOLD'] = 10
+app.config['DEFAULT_ALPHA_MATTING_ERODE_SIZE'] = 10
+app.config['DEFAULT_ALPHA_MATTING_BASE_SIZE'] = 1000
+
 # Security settings
 app.config['WTF_CSRF_ENABLED'] = True
 app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # 1 hour
@@ -155,10 +162,20 @@ def cleanup_old_files():
                         except OSError:
                             pass
 
-def process_single_image(file_data, batch_id, original_filename):
+def process_single_image(file_data, batch_id, original_filename, quality_settings=None):
     """Process a single image in batch mode"""
     try:
         start_time = time.time()
+        
+        # Use default quality settings if none provided
+        if quality_settings is None:
+            quality_settings = {
+                'alpha_matting': app.config['DEFAULT_ALPHA_MATTING'],
+                'foreground_threshold': app.config['DEFAULT_ALPHA_MATTING_FOREGROUND_THRESHOLD'],
+                'background_threshold': app.config['DEFAULT_ALPHA_MATTING_BACKGROUND_THRESHOLD'],
+                'erode_size': app.config['DEFAULT_ALPHA_MATTING_ERODE_SIZE'],
+                'base_size': app.config['DEFAULT_ALPHA_MATTING_BASE_SIZE']
+            }
         
         # Generate secure filename
         secure_filename_gen = generate_secure_filename(original_filename)
@@ -185,15 +202,15 @@ def process_single_image(file_data, batch_id, original_filename):
         with open(optimized_filepath, 'rb') as input_file:
             input_data = input_file.read()
         
-        # Remove background using optimized settings
+        # Remove background using quality settings
         output_data = bg.remove(
             input_data,
             model_name='u2net',
-            alpha_matting=app.config['ENABLE_ALPHA_MATTING'],
-            alpha_matting_foreground_threshold=240,
-            alpha_matting_background_threshold=10,
-            alpha_matting_erode_structure_size=10,
-            alpha_matting_base_size=1000
+            alpha_matting=quality_settings['alpha_matting'],
+            alpha_matting_foreground_threshold=quality_settings['foreground_threshold'],
+            alpha_matting_background_threshold=quality_settings['background_threshold'],
+            alpha_matting_erode_structure_size=quality_settings['erode_size'],
+            alpha_matting_base_size=quality_settings['base_size']
         )
         
         # Save the processed image
@@ -285,6 +302,15 @@ def upload_file():
     if not is_valid:
         return jsonify({'error': error_message}), 400
     
+    # Get quality settings from request
+    quality_settings = {
+        'alpha_matting': request.form.get('alpha_matting', 'false').lower() == 'true',
+        'foreground_threshold': int(request.form.get('foreground_threshold', app.config['DEFAULT_ALPHA_MATTING_FOREGROUND_THRESHOLD'])),
+        'background_threshold': int(request.form.get('background_threshold', app.config['DEFAULT_ALPHA_MATTING_BACKGROUND_THRESHOLD'])),
+        'erode_size': int(request.form.get('erode_size', app.config['DEFAULT_ALPHA_MATTING_ERODE_SIZE'])),
+        'base_size': int(request.form.get('base_size', app.config['DEFAULT_ALPHA_MATTING_BASE_SIZE']))
+    }
+    
     if file and allowed_file(file.filename):
         # Generate secure filename
         secure_filename_gen = generate_secure_filename(file.filename)
@@ -313,15 +339,15 @@ def upload_file():
             with open(optimized_filepath, 'rb') as input_file:
                 input_data = input_file.read()
             
-            # Remove background using optimized settings
+            # Remove background using quality settings
             output_data = bg.remove(
                 input_data,
                 model_name='u2net',
-                alpha_matting=app.config['ENABLE_ALPHA_MATTING'],  # Use config setting
-                alpha_matting_foreground_threshold=240,
-                alpha_matting_background_threshold=10,
-                alpha_matting_erode_structure_size=10,
-                alpha_matting_base_size=1000
+                alpha_matting=quality_settings['alpha_matting'],
+                alpha_matting_foreground_threshold=quality_settings['foreground_threshold'],
+                alpha_matting_background_threshold=quality_settings['background_threshold'],
+                alpha_matting_erode_structure_size=quality_settings['erode_size'],
+                alpha_matting_base_size=quality_settings['base_size']
             )
             
             # Save the processed image
@@ -364,6 +390,15 @@ def batch_upload():
     if not files or all(file.filename == '' for file in files):
         return jsonify({'error': 'No files selected'}), 400
     
+    # Get quality settings from request
+    quality_settings = {
+        'alpha_matting': request.form.get('alpha_matting', 'false').lower() == 'true',
+        'foreground_threshold': int(request.form.get('foreground_threshold', app.config['DEFAULT_ALPHA_MATTING_FOREGROUND_THRESHOLD'])),
+        'background_threshold': int(request.form.get('background_threshold', app.config['DEFAULT_ALPHA_MATTING_BACKGROUND_THRESHOLD'])),
+        'erode_size': int(request.form.get('erode_size', app.config['DEFAULT_ALPHA_MATTING_ERODE_SIZE'])),
+        'base_size': int(request.form.get('base_size', app.config['DEFAULT_ALPHA_MATTING_BASE_SIZE']))
+    }
+    
     # Validate all files
     valid_files = []
     for file in files:
@@ -387,7 +422,7 @@ def batch_upload():
             futures = []
             for file in valid_files:
                 file_data = file.read()
-                future = executor.submit(process_single_image, file_data, batch_id, file.filename)
+                future = executor.submit(process_single_image, file_data, batch_id, file.filename, quality_settings)
                 futures.append(future)
             
             # Wait for all futures to complete

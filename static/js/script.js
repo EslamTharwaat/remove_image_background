@@ -4,6 +4,31 @@ let currentBatchId = null;
 let batchStatusInterval = null;
 let isSingleMode = false;
 
+// Quality settings presets
+const QUALITY_PRESETS = {
+    fast: {
+        alpha_matting: false,
+        foreground_threshold: 240,
+        background_threshold: 10,
+        erode_size: 10,
+        base_size: 1000
+    },
+    balanced: {
+        alpha_matting: true,
+        foreground_threshold: 240,
+        background_threshold: 10,
+        erode_size: 10,
+        base_size: 1000
+    },
+    high: {
+        alpha_matting: true,
+        foreground_threshold: 240,
+        background_threshold: 10,
+        erode_size: 15,
+        base_size: 1500
+    }
+};
+
 // DOM elements (will be initialized when DOM is loaded)
 let uploadArea, fileInput, uploadSection, processingSection, batchProcessingSection, resultsSection, batchResultsSection, errorSection, originalImage, processedImage, errorMessage;
 
@@ -51,6 +76,9 @@ function setupEventListeners() {
     
     // Click to upload
     uploadArea.addEventListener('click', () => fileInput.click());
+    
+    // Setup quality settings
+    setupQualitySettings();
 }
 
 function handleFileSelect(event) {
@@ -126,6 +154,14 @@ function processSingleFile(file) {
     const formData = new FormData();
     formData.append('file', file);
     
+    // Add quality settings
+    const qualitySettings = getQualitySettings();
+    formData.append('alpha_matting', qualitySettings.alpha_matting);
+    formData.append('foreground_threshold', qualitySettings.foreground_threshold);
+    formData.append('background_threshold', qualitySettings.background_threshold);
+    formData.append('erode_size', qualitySettings.erode_size);
+    formData.append('base_size', qualitySettings.base_size);
+    
     fetch('/upload', {
         method: 'POST',
         body: formData
@@ -175,6 +211,14 @@ function processBatchFiles() {
     files.forEach(file => {
         formData.append('files[]', file);
     });
+    
+    // Add quality settings
+    const qualitySettings = getQualitySettings();
+    formData.append('alpha_matting', qualitySettings.alpha_matting);
+    formData.append('foreground_threshold', qualitySettings.foreground_threshold);
+    formData.append('background_threshold', qualitySettings.background_threshold);
+    formData.append('erode_size', qualitySettings.erode_size);
+    formData.append('base_size', qualitySettings.base_size);
     
     fetch('/batch-upload', {
         method: 'POST',
@@ -307,6 +351,54 @@ function toggleUploadMode() {
         uploadArea.querySelector('h3').textContent = 'Drop your images here';
         uploadArea.querySelector('p').textContent = 'or click to browse (supports multiple files)';
     }
+}
+
+function getQualitySettings() {
+    return {
+        alpha_matting: document.getElementById('alphaMatting').checked,
+        foreground_threshold: parseInt(document.getElementById('foregroundThreshold').value),
+        background_threshold: parseInt(document.getElementById('backgroundThreshold').value),
+        erode_size: parseInt(document.getElementById('erodeSize').value),
+        base_size: parseInt(document.getElementById('baseSize').value)
+    };
+}
+
+function setQualityPreset(preset) {
+    const settings = QUALITY_PRESETS[preset];
+    if (!settings) return;
+    
+    document.getElementById('alphaMatting').checked = settings.alpha_matting;
+    document.getElementById('foregroundThreshold').value = settings.foreground_threshold;
+    document.getElementById('backgroundThreshold').value = settings.background_threshold;
+    document.getElementById('erodeSize').value = settings.erode_size;
+    document.getElementById('baseSize').value = settings.base_size;
+    
+    // Update display values
+    updateSliderValues();
+    
+    // Show feedback
+    showSuccessNotification(`Quality preset "${preset}" applied`);
+}
+
+function updateSliderValues() {
+    document.getElementById('foregroundThresholdValue').textContent = document.getElementById('foregroundThreshold').value;
+    document.getElementById('backgroundThresholdValue').textContent = document.getElementById('backgroundThreshold').value;
+    document.getElementById('erodeSizeValue').textContent = document.getElementById('erodeSize').value;
+    document.getElementById('baseSizeValue').textContent = document.getElementById('baseSize').value;
+}
+
+function setupQualitySettings() {
+    // Add event listeners for sliders
+    const sliders = ['foregroundThreshold', 'backgroundThreshold', 'erodeSize', 'baseSize'];
+    sliders.forEach(id => {
+        const slider = document.getElementById(id);
+        if (slider) {
+            slider.addEventListener('input', updateSliderValues);
+        }
+    });
+    
+    // Initialize slider values
+    updateSliderValues();
 }
 
 function showProcessing() {
