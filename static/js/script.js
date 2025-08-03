@@ -161,6 +161,7 @@ function processSingleFile(file) {
     formData.append('background_threshold', qualitySettings.background_threshold);
     formData.append('erode_size', qualitySettings.erode_size);
     formData.append('base_size', qualitySettings.base_size);
+    formData.append('ai_model', qualitySettings.ai_model);
     
     fetch('/upload', {
         method: 'POST',
@@ -219,6 +220,7 @@ function processBatchFiles() {
     formData.append('background_threshold', qualitySettings.background_threshold);
     formData.append('erode_size', qualitySettings.erode_size);
     formData.append('base_size', qualitySettings.base_size);
+    formData.append('ai_model', qualitySettings.ai_model);
     
     fetch('/batch-upload', {
         method: 'POST',
@@ -268,6 +270,7 @@ function updateBatchProgress(data) {
     const processedFiles = document.getElementById('batchProcessedFiles');
     const errors = document.getElementById('batchErrors');
     const status = document.getElementById('batchStatus');
+    const individualProgress = document.getElementById('individualProgress');
     
     if (progressFill) progressFill.style.width = `${data.progress}%`;
     if (progressText) progressText.textContent = `${Math.round(data.progress)}%`;
@@ -282,6 +285,44 @@ function updateBatchProgress(data) {
             status.innerHTML = `<p>✅ Batch processing completed!</p>`;
         }
     }
+    
+    // Update individual progress
+    if (individualProgress && data.individual_progress) {
+        updateIndividualProgress(individualProgress, data.individual_progress);
+    }
+}
+
+function updateIndividualProgress(container, individualProgress) {
+    // Clear existing items
+    container.innerHTML = '';
+    
+    // Create progress items for each file
+    Object.entries(individualProgress).forEach(([filename, progress]) => {
+        const progressItem = document.createElement('div');
+        progressItem.className = 'individual-progress-item';
+        
+        let status = 'processing';
+        let statusText = 'Processing';
+        
+        if (progress === 100) {
+            status = 'completed';
+            statusText = 'Completed';
+        } else if (progress === 0) {
+            status = 'error';
+            statusText = 'Error';
+        }
+        
+        progressItem.innerHTML = `
+            <div class="individual-progress-filename">${filename}</div>
+            <div class="individual-progress-bar">
+                <div class="individual-progress-fill" style="width: ${progress}%"></div>
+            </div>
+            <div class="individual-progress-percentage">${progress}%</div>
+            <div class="individual-progress-status ${status}">${statusText}</div>
+        `;
+        
+        container.appendChild(progressItem);
+    });
 }
 
 function showBatchResults(data) {
@@ -359,7 +400,8 @@ function getQualitySettings() {
         foreground_threshold: parseInt(document.getElementById('foregroundThreshold').value),
         background_threshold: parseInt(document.getElementById('backgroundThreshold').value),
         erode_size: parseInt(document.getElementById('erodeSize').value),
-        base_size: parseInt(document.getElementById('baseSize').value)
+        base_size: parseInt(document.getElementById('baseSize').value),
+        ai_model: document.getElementById('aiModel').value
     };
 }
 

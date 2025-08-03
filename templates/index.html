@@ -43,7 +43,19 @@
                 </div>
                 
                 <div class="quality-settings" id="qualitySettings">
-                    <h4>Quality Settings</h4>
+                    <h4>AI Model & Quality Settings</h4>
+                    
+                    <div class="ai-model-selection">
+                        <label for="aiModel">AI Model:</label>
+                        <select id="aiModel" name="aiModel">
+                            <option value="u2net">U²-Net (General Purpose)</option>
+                            <option value="u2netp">U²-Net+ (Faster)</option>
+                            <option value="u2net_human_seg">U²-Net Human Segmentation</option>
+                            <option value="u2net_cloth_seg">U²-Net Clothing Segmentation</option>
+                        </select>
+                        <small>Choose the best AI model for your image type</small>
+                    </div>
+                    
                     <div class="settings-grid">
                         <div class="setting-item">
                             <label for="alphaMatting">
@@ -123,6 +135,10 @@
                     
                     <div class="batch-status" id="batchStatus">
                         <p>Starting batch processing...</p>
+                    </div>
+                    
+                    <div class="individual-progress" id="individualProgress">
+                        <!-- Individual image progress will be populated here -->
                     </div>
                 </div>
             </div>

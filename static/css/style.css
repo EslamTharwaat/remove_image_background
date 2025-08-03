@@ -144,6 +144,43 @@ body {
     border: 1px solid #e9ecef;
 }
 
+.ai-model-selection {
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.ai-model-selection label {
+    display: block;
+    font-weight: 600;
+    color: #000;
+    margin-bottom: 8px;
+}
+
+.ai-model-selection select {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e9ecef;
+    border-radius: 6px;
+    background: white;
+    font-size: 1rem;
+    color: #333;
+    cursor: pointer;
+    transition: border-color 0.3s ease;
+}
+
+.ai-model-selection select:focus {
+    outline: none;
+    border-color: #000;
+}
+
+.ai-model-selection small {
+    display: block;
+    color: #6c757d;
+    font-size: 0.85rem;
+    margin-top: 5px;
+}
+
 .quality-settings h4 {
     margin: 0 0 20px 0;
     color: #000;
@@ -521,6 +558,82 @@ body {
 .batch-status {
     text-align: center;
     color: #6c757d;
+}
+
+/* Individual progress styles */
+.individual-progress {
+    margin-top: 25px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.individual-progress-item {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.individual-progress-filename {
+    flex: 1;
+    font-weight: 500;
+    color: #333;
+    font-size: 0.9rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.individual-progress-bar {
+    flex: 2;
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.individual-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #000, #333);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+    width: 0%;
+}
+
+.individual-progress-percentage {
+    min-width: 50px;
+    text-align: right;
+    font-weight: 600;
+    color: #000;
+    font-size: 0.9rem;
+}
+
+.individual-progress-status {
+    min-width: 80px;
+    text-align: center;
+    font-size: 0.8rem;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.individual-progress-status.processing {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.individual-progress-status.completed {
+    background: #d4edda;
+    color: #155724;
+}
+
+.individual-progress-status.error {
+    background: #f8d7da;
+    color: #721c24;
 }
 
 /* Batch results styles */
