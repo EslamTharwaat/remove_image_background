@@ -101,6 +101,20 @@
         </footer>
     </div>
 
+    <script>
+        // Add CSRF token to all AJAX requests
+        const csrfToken = '{{ csrf_token() }}';
+        
+        // Override fetch to include CSRF token
+        const originalFetch = window.fetch;
+        window.fetch = function(url, options = {}) {
+            if (options.method && options.method.toUpperCase() !== 'GET') {
+                options.headers = options.headers || {};
+                options.headers['X-CSRFToken'] = csrfToken;
+            }
+            return originalFetch(url, options);
+        };
+    </script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html> 

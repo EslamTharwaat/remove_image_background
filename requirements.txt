@@ -1,4 +1,5 @@
 Flask==2.3.3
 backgroundremover==0.2.9
 Pillow>=8.1.1,<10.0.0
-Werkzeug==2.3.7 
+Werkzeug==2.3.7
+Flask-WTF==1.1.1 

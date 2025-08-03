@@ -1,15 +1,18 @@
 import os
 import uuid
 import threading
-from flask import Flask, render_template, request, jsonify, send_from_directory
+import hashlib
+from flask import Flask, render_template, request, jsonify, send_from_directory, session
+from flask_wtf.csrf import CSRFProtect
 from werkzeug.utils import secure_filename
+from werkzeug.security import safe_join
 from backgroundremover import bg
 from PIL import Image
 import io
 import time
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-secret-key-here'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or os.urandom(24).hex()
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['OUTPUT_FOLDER'] = 'outputs'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
@@ -19,6 +22,16 @@ app.config['ENABLE_IMAGE_OPTIMIZATION'] = True
 app.config['MAX_IMAGE_SIZE'] = 1024  # Maximum dimension for processing
 app.config['ENABLE_ALPHA_MATTING'] = False  # Disable for speed
 app.config['ENABLE_MODEL_CACHING'] = True
+
+# Security settings
+app.config['WTF_CSRF_ENABLED'] = True
+app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # 1 hour
+app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+
+# Initialize CSRF protection
+csrf = CSRFProtect(app)
 
 # Allowed file extensions
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'tiff'}
@@ -43,6 +56,52 @@ def get_optimized_model():
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def generate_secure_filename(original_filename):
+    """Generate a secure filename with hash to prevent path traversal"""
+    # Get file extension
+    ext = os.path.splitext(original_filename)[1].lower()
+    # Generate secure filename with hash
+    secure_name = hashlib.sha256(f"{original_filename}{time.time()}".encode()).hexdigest()[:16]
+    return f"{secure_name}{ext}"
+
+def validate_file_security(file):
+    """Validate file for security threats"""
+    # Check file size
+    if file.content_length and file.content_length > app.config['MAX_CONTENT_LENGTH']:
+        return False, "File too large"
+    
+    # Check file extension
+    if not allowed_file(file.filename):
+        return False, "Invalid file type"
+    
+    # Check for null bytes (potential path traversal)
+    if '\x00' in file.filename:
+        return False, "Invalid filename"
+    
+    # Check for directory traversal attempts
+    if '..' in file.filename or '/' in file.filename or '\\' in file.filename:
+        return False, "Invalid filename"
+    
+    return True, "OK"
+
+def cleanup_old_files():
+    """Clean up old uploaded and processed files for security"""
+    import time
+    current_time = time.time()
+    max_age = 3600  # 1 hour
+    
+    for folder in [app.config['UPLOAD_FOLDER'], app.config['OUTPUT_FOLDER']]:
+        if os.path.exists(folder):
+            for filename in os.listdir(folder):
+                filepath = os.path.join(folder, filename)
+                if os.path.isfile(filepath):
+                    file_age = current_time - os.path.getmtime(filepath)
+                    if file_age > max_age:
+                        try:
+                            os.remove(filepath)
+                        except OSError:
+                            pass
 
 def optimize_image_size(image_path, max_size=None):
     """Optimize image size for faster processing"""
@@ -86,6 +145,9 @@ def index():
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
+    # Clean up old files for security
+    cleanup_old_files()
+    
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
     
@@ -94,11 +156,18 @@ def upload_file():
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
     
+    # Validate file security
+    is_valid, error_message = validate_file_security(file)
+    if not is_valid:
+        return jsonify({'error': error_message}), 400
+    
     if file and allowed_file(file.filename):
-        # Generate unique filename
-        filename = secure_filename(file.filename)
-        unique_filename = f"{uuid.uuid4().hex}_{filename}"
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+        # Generate secure filename
+        secure_filename_gen = generate_secure_filename(file.filename)
+        filepath = safe_join(app.config['UPLOAD_FOLDER'], secure_filename_gen)
+        
+        if filepath is None:
+            return jsonify({'error': 'Invalid file path'}), 400
         
         # Save the uploaded file
         file.save(filepath)
@@ -110,8 +179,11 @@ def upload_file():
             optimized_filepath = optimize_image_size(filepath)
             
             # Remove background
-            output_filename = f"no_bg_{unique_filename}"
-            output_path = os.path.join(app.config['OUTPUT_FOLDER'], output_filename)
+            output_filename = f"no_bg_{secure_filename_gen}"
+            output_path = safe_join(app.config['OUTPUT_FOLDER'], output_filename)
+            
+            if output_path is None:
+                return jsonify({'error': 'Invalid output path'}), 400
             
             # Use optimized backgroundremover with cached model
             with open(optimized_filepath, 'rb') as input_file:
@@ -140,7 +212,7 @@ def upload_file():
             
             return jsonify({
                 'success': True,
-                'original_image': f'/uploads/{unique_filename}',
+                'original_image': f'/uploads/{secure_filename_gen}',
                 'processed_image': f'/outputs/{output_filename}',
                 'message': f'Background removed successfully in {processing_time:.2f} seconds!',
                 'processing_time': round(processing_time, 2)
@@ -156,11 +228,33 @@ def upload_file():
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+    # Validate filename for security
+    if not filename or '..' in filename or '/' in filename:
+        return jsonify({'error': 'Invalid filename'}), 400
+    
+    filepath = safe_join(app.config['UPLOAD_FOLDER'], filename)
+    if filepath is None or not os.path.exists(filepath):
+        return jsonify({'error': 'File not found'}), 404
+    
+    response = send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    return response
 
 @app.route('/outputs/<filename>')
 def output_file(filename):
-    return send_from_directory(app.config['OUTPUT_FOLDER'], filename)
+    # Validate filename for security
+    if not filename or '..' in filename or '/' in filename:
+        return jsonify({'error': 'Invalid filename'}), 400
+    
+    filepath = safe_join(app.config['OUTPUT_FOLDER'], filename)
+    if filepath is None or not os.path.exists(filepath):
+        return jsonify({'error': 'File not found'}), 404
+    
+    response = send_from_directory(app.config['OUTPUT_FOLDER'], filename)
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    return response
 
 @app.route('/favicon.ico')
 def favicon():
