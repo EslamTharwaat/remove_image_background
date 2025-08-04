@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Background Remover</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='none' stroke='%23000' stroke-width='8'/><text x='50' y='65' font-family='Arial, sans-serif' font-size='50' font-weight='bold' text-anchor='middle' fill='%23000'>R</text></svg>">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-magic"></i>
+                <h1>Settings</h1>
+            </div>
+            <nav class="nav-menu">
+                <a href="/" class="nav-link">
+                    <i class="fas fa-home"></i>
+                    Home
+                </a>
+                <a href="/settings" class="nav-link active">
+                    <i class="fas fa-cog"></i>
+                    Settings
+                </a>
+            </nav>
+            <p class="subtitle">Configure AI models and quality settings</p>
+        </header>
+
+        <main class="main-content">
+            <div class="settings-section">
+                <div class="settings-header">
+                    <h2><i class="fas fa-robot"></i> AI Model & Quality Settings</h2>
+                    <p>Configure the AI models and processing quality for background removal</p>
+                </div>
+
+                <div class="settings-content">
+                    <div class="ai-model-selection">
+                        <label for="aiModel">AI Model:</label>
+                        <select id="aiModel" name="aiModel">
+                            <option value="u2net">U²-Net (General Purpose)</option>
+                            <option value="u2netp">U²-Net+ (Faster)</option>
+                            <option value="u2net_human_seg">U²-Net Human Segmentation</option>
+                            <option value="u2net_cloth_seg">U²-Net Clothing Segmentation</option>
+                        </select>
+                        <small>Choose the best AI model for your image type</small>
+                    </div>
+                    
+                    <div class="settings-grid">
+                        <div class="setting-item">
+                            <label for="alphaMatting">
+                                <input type="checkbox" id="alphaMatting" name="alphaMatting">
+                                Enable Alpha Matting (Better Quality)
+                            </label>
+                            <small>Improves edge quality but slower processing</small>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label for="foregroundThreshold">Foreground Threshold:</label>
+                            <input type="range" id="foregroundThreshold" min="0" max="255" value="240" class="slider">
+                            <span class="slider-value" id="foregroundThresholdValue">240</span>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label for="backgroundThreshold">Background Threshold:</label>
+                            <input type="range" id="backgroundThreshold" min="0" max="255" value="10" class="slider">
+                            <span class="slider-value" id="backgroundThresholdValue">10</span>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label for="erodeSize">Erode Size:</label>
+                            <input type="range" id="erodeSize" min="1" max="20" value="10" class="slider">
+                            <span class="slider-value" id="erodeSizeValue">10</span>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label for="baseSize">Base Size:</label>
+                            <input type="range" id="baseSize" min="500" max="2000" step="100" value="1000" class="slider">
+                            <span class="slider-value" id="baseSizeValue">1000</span>
+                        </div>
+                    </div>
+                    
+                    <div class="quality-presets">
+                        <h3>Quick Presets</h3>
+                        <div class="preset-buttons">
+                            <button class="btn btn-sm btn-outline" onclick="setQualityPreset('fast')">
+                                <i class="fas fa-bolt"></i>
+                                Fast
+                            </button>
+                            <button class="btn btn-sm btn-outline" onclick="setQualityPreset('balanced')">
+                                <i class="fas fa-balance-scale"></i>
+                                Balanced
+                            </button>
+                            <button class="btn btn-sm btn-outline" onclick="setQualityPreset('high')">
+                                <i class="fas fa-star"></i>
+                                High Quality
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- S3 Upload Configuration -->
+                    <div class="s3-settings-section">
+                        <h3><i class="fas fa-cloud-upload-alt"></i> S3 Upload Settings</h3>
+                        <p class="section-description">Configure AWS S3 for automatic upload of processed images</p>
+                        
+                        <div class="s3-settings">
+                            <div class="setting-item">
+                                <label for="enableS3Upload" class="s3-toggle">
+                                    <input type="checkbox" id="enableS3Upload" name="enableS3Upload">
+                                    <span class="toggle-label">Enable S3 Upload</span>
+                                </label>
+                                <small>Automatically upload processed images to AWS S3 bucket</small>
+                            </div>
+                            
+                            <div class="s3-credentials" id="s3Credentials">
+                                <div class="setting-item">
+                                    <label for="s3BucketName">S3 Bucket Name:</label>
+                                    <input type="text" id="s3BucketName" name="s3BucketName" class="setting-input" placeholder="my-background-remover-bucket">
+                                    <small>The name of your AWS S3 bucket</small>
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <label for="s3AccessKeyId">Access Key ID:</label>
+                                    <input type="text" id="s3AccessKeyId" name="s3AccessKeyId" class="setting-input" placeholder="AKIA...">
+                                    <small>Your AWS Access Key ID</small>
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <label for="s3SecretAccessKey">Secret Access Key:</label>
+                                    <input type="password" id="s3SecretAccessKey" name="s3SecretAccessKey" class="setting-input" placeholder="Secret key...">
+                                    <small>Your AWS Secret Access Key</small>
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <label for="s3RegionName">Region:</label>
+                                    <select id="s3RegionName" name="s3RegionName" class="setting-input">
+                                        <option value="us-east-1">US East (N. Virginia) - us-east-1</option>
+                                        <option value="us-west-2">US West (Oregon) - us-west-2</option>
+                                        <option value="eu-west-1">Europe (Ireland) - eu-west-1</option>
+                                        <option value="ap-southeast-1">Asia Pacific (Singapore) - ap-southeast-1</option>
+                                        <option value="ap-northeast-1">Asia Pacific (Tokyo) - ap-northeast-1</option>
+                                    </select>
+                                    <small>The AWS region where your S3 bucket is located</small>
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <label for="s3FolderPrefix">Folder Prefix:</label>
+                                    <input type="text" id="s3FolderPrefix" name="s3FolderPrefix" class="setting-input" placeholder="background-remover/" value="background-remover/">
+                                    <small>Folder prefix for organizing uploaded files in S3</small>
+                                </div>
+                            </div>
+                            
+                            <div class="s3-status" id="s3Status">
+                                <div class="status-indicator">
+                                    <i class="fas fa-circle status-icon"></i>
+                                    <span class="status-text">S3 upload disabled</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-info">
+                        <h3><i class="fas fa-info-circle"></i> Settings Information</h3>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <h4>AI Models</h4>
+                                <ul>
+                                    <li><strong>U²-Net:</strong> Best for most image types</li>
+                                    <li><strong>U²-Net+:</strong> Optimized for speed</li>
+                                    <li><strong>Human Segmentation:</strong> Specialized for people</li>
+                                    <li><strong>Clothing Segmentation:</strong> Best for fashion items</li>
+                                </ul>
+                            </div>
+                            <div class="info-item">
+                                <h4>Quality Settings</h4>
+                                <ul>
+                                    <li><strong>Alpha Matting:</strong> Improves edge quality</li>
+                                    <li><strong>Thresholds:</strong> Control detection sensitivity</li>
+                                    <li><strong>Erode Size:</strong> Affects edge refinement</li>
+                                    <li><strong>Base Size:</strong> Controls processing resolution</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-actions">
+                        <button class="btn btn-primary" onclick="saveSettings()">
+                            <i class="fas fa-save"></i>
+                            Save Settings
+                        </button>
+                        <button class="btn btn-secondary" onclick="resetSettings()">
+                            <i class="fas fa-undo"></i>
+                            Reset to Defaults
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2024 Background Remover. Made with ❤️ by Eslam Tharwat</p>
+        </footer>
+    </div>
+
+    <script>
+        // Settings functionality
+        function setQualityPreset(preset) {
+            switch(preset) {
+                case 'fast':
+                    document.getElementById('alphaMatting').checked = false;
+                    document.getElementById('foregroundThreshold').value = 240;
+                    document.getElementById('backgroundThreshold').value = 10;
+                    document.getElementById('erodeSize').value = 10;
+                    document.getElementById('baseSize').value = 500;
+                    break;
+                case 'balanced':
+                    document.getElementById('alphaMatting').checked = false;
+                    document.getElementById('foregroundThreshold').value = 240;
+                    document.getElementById('backgroundThreshold').value = 10;
+                    document.getElementById('erodeSize').value = 10;
+                    document.getElementById('baseSize').value = 1000;
+                    break;
+                case 'high':
+                    document.getElementById('alphaMatting').checked = true;
+                    document.getElementById('foregroundThreshold').value = 240;
+                    document.getElementById('backgroundThreshold').value = 10;
+                    document.getElementById('erodeSize').value = 10;
+                    document.getElementById('baseSize').value = 2000;
+                    break;
+            }
+            updateSliderValues();
+        }
+
+        function updateSliderValues() {
+            document.getElementById('foregroundThresholdValue').textContent = document.getElementById('foregroundThreshold').value;
+            document.getElementById('backgroundThresholdValue').textContent = document.getElementById('backgroundThreshold').value;
+            document.getElementById('erodeSizeValue').textContent = document.getElementById('erodeSize').value;
+            document.getElementById('baseSizeValue').textContent = document.getElementById('baseSize').value;
+        }
+
+        function saveSettings() {
+            const settings = {
+                aiModel: document.getElementById('aiModel').value,
+                alphaMatting: document.getElementById('alphaMatting').checked,
+                foregroundThreshold: document.getElementById('foregroundThreshold').value,
+                backgroundThreshold: document.getElementById('backgroundThreshold').value,
+                erodeSize: document.getElementById('erodeSize').value,
+                baseSize: document.getElementById('baseSize').value,
+                // S3 Settings
+                enableS3Upload: document.getElementById('enableS3Upload').checked,
+                s3BucketName: document.getElementById('s3BucketName').value,
+                s3AccessKeyId: document.getElementById('s3AccessKeyId').value,
+                s3SecretAccessKey: document.getElementById('s3SecretAccessKey').value,
+                s3RegionName: document.getElementById('s3RegionName').value,
+                s3FolderPrefix: document.getElementById('s3FolderPrefix').value
+            };
+            
+            localStorage.setItem('backgroundRemoverSettings', JSON.stringify(settings));
+            
+            // Show success message
+            alert('Settings saved successfully!');
+        }
+
+        function resetSettings() {
+            if (confirm('Are you sure you want to reset all settings to defaults?')) {
+                document.getElementById('aiModel').value = 'u2net';
+                document.getElementById('alphaMatting').checked = false;
+                document.getElementById('foregroundThreshold').value = 240;
+                document.getElementById('backgroundThreshold').value = 10;
+                document.getElementById('erodeSize').value = 10;
+                document.getElementById('baseSize').value = 1000;
+                
+                // Reset S3 settings
+                document.getElementById('enableS3Upload').checked = false;
+                document.getElementById('s3BucketName').value = '';
+                document.getElementById('s3AccessKeyId').value = '';
+                document.getElementById('s3SecretAccessKey').value = '';
+                document.getElementById('s3RegionName').value = 'us-east-1';
+                document.getElementById('s3FolderPrefix').value = 'background-remover/';
+                
+                updateSliderValues();
+                updateS3Status();
+                localStorage.removeItem('backgroundRemoverSettings');
+                
+                alert('Settings reset to defaults!');
+            }
+        }
+
+        function loadSettings() {
+            const savedSettings = localStorage.getItem('backgroundRemoverSettings');
+            if (savedSettings) {
+                const settings = JSON.parse(savedSettings);
+                document.getElementById('aiModel').value = settings.aiModel || 'u2net';
+                document.getElementById('alphaMatting').checked = settings.alphaMatting || false;
+                document.getElementById('foregroundThreshold').value = settings.foregroundThreshold || 240;
+                document.getElementById('backgroundThreshold').value = settings.backgroundThreshold || 10;
+                document.getElementById('erodeSize').value = settings.erodeSize || 10;
+                document.getElementById('baseSize').value = settings.baseSize || 1000;
+                
+                // Load S3 settings
+                document.getElementById('enableS3Upload').checked = settings.enableS3Upload || false;
+                document.getElementById('s3BucketName').value = settings.s3BucketName || '';
+                document.getElementById('s3AccessKeyId').value = settings.s3AccessKeyId || '';
+                document.getElementById('s3SecretAccessKey').value = settings.s3SecretAccessKey || '';
+                document.getElementById('s3RegionName').value = settings.s3RegionName || 'us-east-1';
+                document.getElementById('s3FolderPrefix').value = settings.s3FolderPrefix || 'background-remover/';
+                
+                updateSliderValues();
+                updateS3Status();
+            }
+        }
+
+        function updateS3Status() {
+            const isEnabled = document.getElementById('enableS3Upload').checked;
+            const statusElement = document.getElementById('s3Status');
+            const statusIcon = statusElement.querySelector('.status-icon');
+            const statusText = statusElement.querySelector('.status-text');
+            
+            if (isEnabled) {
+                statusIcon.className = 'fas fa-circle status-icon enabled';
+                statusText.textContent = 'S3 upload enabled';
+            } else {
+                statusIcon.className = 'fas fa-circle status-icon disabled';
+                statusText.textContent = 'S3 upload disabled';
+            }
+        }
+
+        // Initialize settings
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSettings();
+            
+            // Add event listeners for sliders
+            document.getElementById('foregroundThreshold').addEventListener('input', updateSliderValues);
+            document.getElementById('backgroundThreshold').addEventListener('input', updateSliderValues);
+            document.getElementById('erodeSize').addEventListener('input', updateSliderValues);
+            document.getElementById('baseSize').addEventListener('input', updateSliderValues);
+            
+            // Add event listener for S3 toggle
+            document.getElementById('enableS3Upload').addEventListener('change', updateS3Status);
+        });
+    </script>
+</body>
+</html> 

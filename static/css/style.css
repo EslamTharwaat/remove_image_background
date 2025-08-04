@@ -29,6 +29,41 @@ body {
     padding: 40px 0;
     background: #f8f9fa;
     border-bottom: 1px solid #e9ecef;
+    position: relative;
+}
+
+.nav-menu {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    gap: 15px;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 15px;
+    text-decoration: none;
+    color: #6c757d;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.nav-link:hover {
+    background: #e9ecef;
+    color: #000;
+}
+
+.nav-link.active {
+    background: #000;
+    color: white;
+}
+
+.nav-link i {
+    font-size: 1rem;
 }
 
 .logo {
@@ -839,6 +874,222 @@ body {
     color: #6c757d;
     border-top: 1px solid #e9ecef;
     background: #f8f9fa;
+}
+
+/* Settings page styles */
+.settings-section {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.settings-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.settings-header h2 {
+    font-size: 2rem;
+    font-weight: 600;
+    color: #000;
+    margin-bottom: 10px;
+}
+
+.settings-header p {
+    color: #6c757d;
+    font-size: 1.1rem;
+}
+
+.settings-content {
+    background: white;
+    border-radius: 8px;
+    padding: 40px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.settings-info {
+    margin-top: 40px;
+    padding: 30px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.settings-info h3 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #000;
+    margin-bottom: 20px;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+}
+
+.info-item h4 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #000;
+    margin-bottom: 15px;
+}
+
+.info-item ul {
+    list-style: none;
+    padding: 0;
+}
+
+.info-item li {
+    padding: 8px 0;
+    border-bottom: 1px solid #e9ecef;
+    color: #6c757d;
+}
+
+.info-item li:last-child {
+    border-bottom: none;
+}
+
+.settings-actions {
+    margin-top: 40px;
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.quality-presets h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #000;
+    margin-bottom: 15px;
+}
+
+.preset-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+/* S3 Settings Styles */
+.s3-settings-section {
+    margin-top: 40px;
+    padding: 30px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.s3-settings-section h3 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #000;
+    margin-bottom: 10px;
+}
+
+.section-description {
+    color: #6c757d;
+    margin-bottom: 20px;
+    font-size: 0.95rem;
+}
+
+.s3-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.s3-toggle input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+}
+
+.s3-credentials {
+    margin-top: 20px;
+    padding: 20px;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+}
+
+.setting-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    font-size: 0.95rem;
+    transition: border-color 0.2s ease;
+}
+
+.setting-input:focus {
+    outline: none;
+    border-color: #000;
+}
+
+.s3-status {
+    margin-top: 20px;
+    padding: 15px;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.status-icon {
+    font-size: 0.8rem;
+}
+
+.status-icon.enabled {
+    color: #28a745;
+}
+
+.status-icon.disabled {
+    color: #dc3545;
+}
+
+/* Settings info on home page */
+.settings-info {
+    margin-top: 30px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    text-align: center;
+}
+
+.settings-info-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.settings-info-content i {
+    font-size: 1.2rem;
+    color: #6c757d;
+}
+
+.settings-info-content p {
+    margin: 0;
+    color: #6c757d;
+    font-size: 0.95rem;
+}
+
+.settings-link {
+    color: #000;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.settings-link:hover {
+    color: #6c757d;
+    text-decoration: underline;
 }
 
 /* Responsive design */

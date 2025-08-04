@@ -318,6 +318,10 @@ def optimize_image_size(image_path, max_size=None):
 def index():
     return render_template('index.html')
 
+@app.route('/settings')
+def settings():
+    return render_template('settings.html')
+
 @app.route('/upload', methods=['POST'])
 def upload_file():
     # Clean up old files for security
