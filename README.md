@@ -1,17 +1,17 @@
-# 🎨 AI Background Remover
+# 🎨 Otrium AI Background Remover
 
-A modern Flask web application that removes backgrounds from images using advanced AI models. Built with clean architecture, comprehensive security features, and an intuitive user interface.
+A modern Flask web application specialized in removing backgrounds from human photos using advanced AI. Optimized for fashion photography and portrait images with clean architecture, comprehensive security features, and an intuitive user interface.
 
 ## ✨ Features
 
 ### 🖼️ **Core Functionality**
-- **AI-Powered Background Removal**: Uses state-of-the-art U²-Net models
-- **Multiple AI Models**: Choose from 4 different AI models for optimal results
-- **Quality Settings**: Fine-tune processing parameters for best results
+- **AI-Powered Human Background Removal**: Uses specialized U²-Net human segmentation model
+- **Optimized for Fashion**: Perfect for clothing, portrait, and fashion photography
 - **Batch Processing**: Process multiple images in parallel
-- **Reprocess Feature**: Experiment with different settings without re-uploading
+- **S3 Integration**: Optional upload to AWS S3 for cloud storage
 
 ### 🚀 **Performance & Optimization**
+- **Human-Focused AI**: Specialized model for people wearing clothes
 - **Image Optimization**: Automatic resizing for faster processing
 - **Model Caching**: Intelligent caching for improved performance
 - **Parallel Processing**: Multi-threaded batch processing
@@ -25,11 +25,11 @@ A modern Flask web application that removes backgrounds from images using advanc
 - **Automatic Cleanup**: Secure file cleanup and management
 
 ### 🎯 **User Experience**
-- **Modern UI**: Clean, responsive design inspired by modern e-commerce
+- **Modern UI**: Clean, responsive design with Otrium branding
 - **Drag & Drop**: Intuitive file upload interface
 - **Real-time Progress**: Live progress tracking for batch processing
-- **Quality Presets**: Quick settings for Fast, Balanced, and High Quality
 - **Individual Progress**: Per-image progress tracking in batch mode
+- **ZIP File Support**: Upload multiple images in ZIP format
 
 ## 🏗️ Project Structure
 
@@ -42,11 +42,13 @@ remove_image_background/
 │   │   └── settings.py          # Application settings
 │   ├── routes/                  # Route definitions
 │   │   ├── __init__.py
-│   │   └── main.py              # Main application routes
+│   │   ├── main.py              # Main application routes
+│   │   └── api.py               # REST API routes
 │   ├── services/                # Business logic services
 │   │   ├── __init__.py
 │   │   ├── background_remover.py # Background removal service
-│   │   └── batch_processor.py   # Batch processing service
+│   │   ├── batch_processor.py   # Batch processing service
+│   │   └── s3_service.py        # AWS S3 integration
 │   ├── utils/                   # Utility functions
 │   │   ├── __init__.py
 │   │   └── file_utils.py        # File handling utilities
@@ -54,16 +56,19 @@ remove_image_background/
 │   │   ├── css/
 │   │   │   └── style.css        # Application styles
 │   │   ├── js/
-│   │   │   └── script.js        # Frontend JavaScript
+│   │   │   ├── script.js        # Main frontend JavaScript
+│   │   │   └── settings.js      # Settings page JavaScript
 │   │   └── images/              # Static images
 │   └── templates/               # HTML templates
-│       └── index.html           # Main application template
+│       ├── index.html           # Main application template
+│       └── settings.html        # Settings page template
 ├── uploads/                     # Uploaded images (auto-created)
 ├── outputs/                     # Processed images (auto-created)
 ├── venv/                        # Virtual environment (auto-created)
 ├── requirements.txt             # Python dependencies
 ├── run.py                       # Application entry point
 ├── start.sh                     # Startup script for Unix/Linux
+├── API_DOCUMENTATION.md         # REST API documentation
 ├── .gitignore                   # Git ignore rules
 └── README.md                    # Project documentation
 ```
@@ -109,60 +114,73 @@ chmod +x start.sh
 
 ## 🎛️ Configuration
 
-The application uses a flexible configuration system with environment-specific settings:
+The application uses a streamlined configuration system optimized for human background removal:
 
 ### Environment Variables
 - `FLASK_ENV`: Set to `development`, `production`, or `testing`
 - `SECRET_KEY`: Custom secret key for enhanced security
 
-### Configuration Options
-All settings are defined in `app/config/settings.py`:
+### Key Settings
+Settings are defined in `app/config/settings.py`:
 
 ```python
+# AI Model (fixed for human segmentation)
+AVAILABLE_MODELS = ['u2net_human_seg']
+DEFAULT_MODEL = 'u2net_human_seg'
+DEFAULT_ALPHA_MATTING = False
+
 # Performance settings
 ENABLE_IMAGE_OPTIMIZATION = True
 MAX_IMAGE_SIZE = 1024
 ENABLE_MODEL_CACHING = True
 
-# AI Model settings
-AVAILABLE_MODELS = ['u2net', 'u2netp', 'u2net_human_seg', 'u2net_cloth_seg']
-DEFAULT_MODEL = 'u2net'
-
-# Quality settings
-DEFAULT_ALPHA_MATTING = False
-DEFAULT_ALPHA_MATTING_FOREGROUND_THRESHOLD = 240
-DEFAULT_ALPHA_MATTING_BACKGROUND_THRESHOLD = 10
+# S3 Integration (optional)
+ENABLE_S3_UPLOAD = False
+S3_BUCKET_NAME = ''
+S3_REGION_NAME = 'us-east-1'
 ```
 
 ## 🎨 Usage Guide
 
 ### Single Image Processing
-1. **Upload Image**: Drag & drop or click to select an image
-2. **Choose AI Model**: Select the best model for your image type
-3. **Adjust Quality**: Fine-tune settings or use presets
-4. **Process**: Click "Remove Background" to start processing
-5. **Download**: Download the processed image
-6. **Reprocess**: Try different settings with the "Reprocess" button
+1. **Upload Image**: Drag & drop or click to upload a photo of a person
+2. **Automatic Processing**: Uses optimized human segmentation model
+3. **Download**: Download the processed image with transparent background
+4. **Perfect for**: Portraits, fashion photos, people wearing clothes
 
 ### Batch Processing
-1. **Upload Multiple Images**: Select multiple images at once
-2. **Configure Settings**: Set AI model and quality parameters
-3. **Start Processing**: Images are processed in parallel
-4. **Monitor Progress**: Real-time progress for each image
-5. **Download Results**: Download individual or all processed images
+1. **Upload Multiple Images**: Select multiple images or upload a ZIP file
+2. **Parallel Processing**: All images processed simultaneously
+3. **Monitor Progress**: Real-time progress for each image
+4. **Download Results**: Download individual or all processed images
 
-### AI Models Available
-- **U²-Net (General Purpose)**: Best for most image types
-- **U²-Net+ (Faster)**: Optimized for speed
-- **U²-Net Human Segmentation**: Specialized for human subjects
-- **U²-Net Clothing Segmentation**: Best for clothing and fashion items
+### S3 Integration (Optional)
+1. **Configure S3**: Go to Settings page to configure AWS credentials
+2. **Automatic Upload**: Processed images can be automatically uploaded to S3
+3. **Cloud Storage**: Access your processed images from anywhere
 
-### Quality Settings
-- **Alpha Matting**: Improves edge quality (slower processing)
-- **Foreground Threshold**: Controls foreground detection sensitivity
-- **Background Threshold**: Controls background removal sensitivity
-- **Erode Size**: Affects edge refinement
-- **Base Size**: Controls processing resolution
+### Best Results
+- **Human subjects**: Optimized for people wearing clothes
+- **Fashion photography**: Excellent for clothing and fashion items
+- **Portrait photography**: Great for profile pictures and portraits
+- **E-commerce**: Perfect for product photos with human models
+
+## 📡 REST API
+
+The application includes a comprehensive REST API for programmatic access:
+
+### Base URL
+`http://localhost:5000/api/v1`
+
+### Key Endpoints
+- `POST /process` - Process single image
+- `POST /process-zip` - Process ZIP file with multiple images
+- `GET /health` - Health check
+- `GET /models` - Get available models
+- `GET /settings` - Get API settings
+
+### Documentation
+See [API_DOCUMENTATION.md](API_DOCUMENTATION.md) for complete API documentation with examples.
 
 ## 🔧 Development
 
@@ -177,7 +195,7 @@ The application follows clean architecture principles:
 
 ### Adding New Features
 
-1. **New Routes**: Add to `app/routes/main.py`
+1. **New Routes**: Add to `app/routes/main.py` or `app/routes/api.py`
 2. **New Services**: Create in `app/services/`
 3. **New Utils**: Add to `app/utils/`
 4. **Configuration**: Update `app/config/settings.py`
@@ -216,6 +234,7 @@ tests/
 3. Use a production WSGI server (Gunicorn, uWSGI)
 4. Set up reverse proxy (Nginx, Apache)
 5. Enable HTTPS
+6. Configure S3 credentials if using cloud storage
 
 ### Docker Deployment
 ```dockerfile
@@ -242,18 +261,19 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- **U²-Net Models**: For the excellent background removal AI models
+- **U²-Net Models**: For the excellent human segmentation AI model
 - **Flask Community**: For the robust web framework
 - **Pillow**: For image processing capabilities
-- **Otrium**: For UI design inspiration
+- **Otrium**: For branding and UI design inspiration
+- **backgroundremover**: For the AI model integration
 
 ## 📞 Support
 
 For support and questions:
 - Create an issue on GitHub
-- Check the documentation
+- Check the API documentation
 - Review the code comments
 
 ---
 
-**Made with ❤️ by Eslam Tharwat** 
+**© 2025 Otrium.com - Professional AI Image Processing**
