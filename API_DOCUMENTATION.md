@@ -8,7 +8,40 @@ The Background Remover API provides programmatic access to AI-powered background
 
 ## Authentication
 
-Currently, the API does not require authentication. All endpoints are publicly accessible.
+The API uses Bearer token authentication for security. All endpoints (except `/health` and `/auth/info`) require a valid Bearer token.
+
+### How to Authenticate
+
+Include the Bearer token in the `Authorization` header of your requests:
+
+```
+Authorization: Bearer your-token-here
+```
+
+### Getting Your Token
+
+The default token is `otrium-bg-remover-2025-secure-token`, but you should set your own secure token using the `API_BEARER_TOKEN` environment variable:
+
+```bash
+export API_BEARER_TOKEN="your-secure-token-here"
+```
+
+### Authentication Info Endpoint
+
+**GET** `/auth/info`
+
+Get authentication requirements and format information.
+
+**Response:**
+```json
+{
+  "required": true,
+  "type": "Bearer Token",
+  "header": "Authorization",
+  "format": "Bearer <token>",
+  "example": "Bearer your-token-here"
+}
+```
 
 ## Endpoints
 
@@ -23,7 +56,8 @@ Check if the API service is running.
 {
   "status": "healthy",
   "service": "background-remover",
-  "version": "1.0.0"
+  "version": "1.0.0",
+  "authentication_required": true
 }
 ```
 
@@ -39,6 +73,7 @@ Process a single image to remove its background using optimized human segmentati
 ```
 POST /api/v1/process
 Content-Type: multipart/form-data
+Authorization: Bearer your-token-here
 
 Form Data:
 - image: [image file]
@@ -48,6 +83,7 @@ Form Data:
 ```
 POST /api/v1/process
 Content-Type: application/x-www-form-urlencoded
+Authorization: Bearer your-token-here
 
 Form Data:
 - image_data: [base64 encoded image]
@@ -76,6 +112,7 @@ Process multiple images from a ZIP file using human segmentation.
 ```
 POST /api/v1/process-zip
 Content-Type: multipart/form-data
+Authorization: Bearer your-token-here
 
 Form Data:
 - zip_file: [ZIP file containing images]
@@ -218,9 +255,28 @@ All endpoints return appropriate HTTP status codes and error messages:
 
 Common status codes:
 - `400 Bad Request`: Invalid input or file format
+- `401 Unauthorized`: Missing, invalid, or expired Bearer token
 - `413 Payload Too Large`: File too large
 - `415 Unsupported Media Type`: Unsupported file format
 - `500 Internal Server Error`: Server processing error
+
+### Authentication Errors
+
+When authentication fails, you'll receive a `401 Unauthorized` response:
+
+```json
+{
+  "error": "Missing Authorization header",
+  "message": "Bearer token is required for API access"
+}
+```
+
+```json
+{
+  "error": "Invalid token",
+  "message": "The provided Bearer token is invalid"
+}
+```
 
 ## Examples
 
@@ -231,10 +287,11 @@ import requests
 import base64
 
 # Process single image (simplified - no quality settings needed)
+headers = {'Authorization': 'Bearer your-token-here'}
 with open('person_photo.jpg', 'rb') as f:
     files = {'image': f}
     response = requests.post('http://localhost:5000/api/v1/process', 
-                           files=files)
+                           files=files, headers=headers)
     result = response.json()
     print(result['message'])
 
@@ -242,7 +299,7 @@ with open('person_photo.jpg', 'rb') as f:
 with open('fashion_photos.zip', 'rb') as f:
     files = {'zip_file': f}
     response = requests.post('http://localhost:5000/api/v1/process-zip', 
-                           files=files)
+                           files=files, headers=headers)
     result = response.json()
     print(f"Processed {result['successful']} images")
 
@@ -251,7 +308,7 @@ with open('portrait.jpg', 'rb') as f:
     image_data = base64.b64encode(f.read()).decode('utf-8')
     data = {'image_data': image_data}
     response = requests.post('http://localhost:5000/api/v1/process', 
-                           data=data)
+                           data=data, headers=headers)
     result = response.json()
     print(result['message'])
 ```
@@ -261,17 +318,23 @@ with open('portrait.jpg', 'rb') as f:
 ```bash
 # Process single image
 curl -X POST http://localhost:5000/api/v1/process \
+  -H "Authorization: Bearer your-token-here" \
   -F "image=@person_photo.jpg"
 
 # Process ZIP file
 curl -X POST http://localhost:5000/api/v1/process-zip \
+  -H "Authorization: Bearer your-token-here" \
   -F "zip_file=@fashion_photos.zip"
 
-# Health check
+# Health check (no auth required)
 curl http://localhost:5000/api/v1/health
 
+# Get authentication info (no auth required)
+curl http://localhost:5000/api/v1/auth/info
+
 # Get model information
-curl http://localhost:5000/api/v1/models
+curl -H "Authorization: Bearer your-token-here" \
+  http://localhost:5000/api/v1/models
 ```
 
 ### JavaScript Example
@@ -283,6 +346,9 @@ formData.append('image', fileInput.files[0]);
 
 fetch('http://localhost:5000/api/v1/process', {
     method: 'POST',
+    headers: {
+        'Authorization': 'Bearer your-token-here'
+    },
     body: formData
 })
 .then(response => response.json())
@@ -301,6 +367,7 @@ fetch('http://localhost:5000/api/v1/process', {
     method: 'POST',
     headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': 'Bearer your-token-here'
     },
     body: `image_data=${encodeURIComponent(imageData)}`
 })

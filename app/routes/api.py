@@ -8,6 +8,7 @@ from app.utils.file_utils import (
     is_zip_file, validate_zip_file, extract_images_from_zip,
     cleanup_old_files, safe_join
 )
+from app.utils.auth import require_bearer_token, get_auth_info
 from app.services.background_remover import BackgroundRemoverService
 from app.services.batch_processor import BatchProcessor
 from app.services.s3_service import S3Service
@@ -33,10 +34,17 @@ def init_api_routes(app, config):
         return jsonify({
             'status': 'healthy',
             'service': 'background-remover',
-            'version': '1.0.0'
+            'version': '1.0.0',
+            'authentication_required': config_instance.API_REQUIRE_AUTH
         })
     
+    @api.route('/auth/info', methods=['GET'])
+    def auth_info():
+        """Get authentication information"""
+        return jsonify(get_auth_info())
+    
     @api.route('/process', methods=['POST'])
+    @require_bearer_token
     def process_single_image():
         """
         Process a single image via API
@@ -149,6 +157,7 @@ def init_api_routes(app, config):
             raise BadRequest(f"Error processing image: {str(e)}")
     
     @api.route('/process-zip', methods=['POST'])
+    @require_bearer_token
     def process_zip_file():
         """
         Process multiple images from ZIP file
@@ -244,6 +253,7 @@ def init_api_routes(app, config):
             raise BadRequest(f"Error processing ZIP file: {str(e)}")
     
     @api.route('/download/<filename>', methods=['GET'])
+    @require_bearer_token
     def download_processed_image(filename):
         """Download a processed image"""
         # Validate filename
@@ -262,6 +272,7 @@ def init_api_routes(app, config):
         )
     
     @api.route('/models', methods=['GET'])
+    @require_bearer_token
     def get_available_models():
         """Get list of available AI models (fixed to human segmentation)"""
         return jsonify({
@@ -271,6 +282,7 @@ def init_api_routes(app, config):
         })
     
     @api.route('/settings', methods=['GET'])
+    @require_bearer_token
     def get_default_settings():
         """Get default quality settings (fixed for human segmentation)"""
         return jsonify({

@@ -57,6 +57,11 @@ class Config:
     # Batch processing settings
     MAX_BATCH_WORKERS = 4
     BATCH_STATUS_POLL_INTERVAL = 1  # seconds
+    
+    # API Authentication settings
+    API_REQUIRE_AUTH = True
+    API_BEARER_TOKEN = os.environ.get('API_BEARER_TOKEN', 'otrium-bg-remover-2025-secure-token')
+    API_TOKEN_HEADER = 'Authorization'
 
 class DevelopmentConfig(Config):
     """Development configuration"""
