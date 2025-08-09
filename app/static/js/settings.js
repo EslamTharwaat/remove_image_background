@@ -3,30 +3,7 @@
  * Handles AI model and quality settings configuration
  */
 
-// Quality presets configuration
-const QUALITY_PRESETS = {
-    'fast': {
-        alpha_matting: false,
-        foreground_threshold: 240,
-        background_threshold: 10,
-        erode_size: 10,
-        base_size: 500
-    },
-    'balanced': {
-        alpha_matting: false,
-        foreground_threshold: 240,
-        background_threshold: 10,
-        erode_size: 10,
-        base_size: 1000
-    },
-    'high': {
-        alpha_matting: true,
-        foreground_threshold: 240,
-        background_threshold: 10,
-        erode_size: 10,
-        base_size: 1500
-    }
-};
+
 
 // Default settings
 const DEFAULT_SETTINGS = {
@@ -110,23 +87,7 @@ function validateS3Settings() {
     return true;
 }
 
-function setQualityPreset(preset) {
-    const settings = QUALITY_PRESETS[preset];
-    if (!settings) return;
-    
-    // Apply preset values
-    document.getElementById('alphaMatting').checked = settings.alpha_matting;
-    document.getElementById('foregroundThreshold').value = settings.foreground_threshold;
-    document.getElementById('backgroundThreshold').value = settings.background_threshold;
-    document.getElementById('erodeSize').value = settings.erode_size;
-    document.getElementById('baseSize').value = settings.base_size;
-    
-    // Update display values
-    updateSliderValues();
-    
-    // Show feedback
-    showNotification(`Quality preset "${preset}" applied successfully!`, 'success');
-}
+
 
 function getCurrentSettings() {
     return {
@@ -153,9 +114,6 @@ function saveSettings() {
     
     // Show success message
     showNotification('Settings saved successfully!', 'success');
-    
-    // Update main page settings if it exists
-    updateMainPageSettings(settings);
 }
 
 function loadSettings() {
@@ -203,20 +161,7 @@ function applyDefaultSettings() {
     updateS3UI();
 }
 
-function updateMainPageSettings(settings) {
-    // Try to update settings on the main page if it's open
-    try {
-        if (window.opener && !window.opener.closed) {
-            // If settings page was opened from main page
-            window.opener.postMessage({
-                type: 'SETTINGS_UPDATED',
-                settings: settings
-            }, '*');
-        }
-    } catch (e) {
-        // Ignore errors if main page is not available
-    }
-}
+
 
 function showNotification(message, type = 'info') {
     // Create notification element

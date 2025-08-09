@@ -241,14 +241,4 @@ def ensure_directories_exist(*directories):
         Path(directory).mkdir(parents=True, exist_ok=True)
 
 
-def get_file_info(filepath):
-    """Get file information"""
-    if not os.path.exists(filepath):
-        return None
-    
-    stat = os.stat(filepath)
-    return {
-        'size': stat.st_size,
-        'modified': stat.st_mtime,
-        'created': stat.st_ctime
-    } 
+ 

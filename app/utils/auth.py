@@ -59,32 +59,7 @@ def require_bearer_token(f):
     return decorated_function
 
 
-def is_authenticated():
-    """
-    Check if the current request is authenticated
-    
-    Returns:
-        bool: True if authenticated, False otherwise
-    """
-    # Check if authentication is required
-    if not current_app.config.get('API_REQUIRE_AUTH', True):
-        return True
-    
-    # Get the Authorization header
-    auth_header = request.headers.get(current_app.config.get('API_TOKEN_HEADER', 'Authorization'))
-    
-    if not auth_header or not auth_header.startswith('Bearer '):
-        return False
-    
-    # Extract the token
-    token = auth_header.split(' ')[1] if len(auth_header.split(' ')) == 2 else None
-    
-    if not token:
-        return False
-    
-    # Validate the token
-    expected_token = current_app.config.get('API_BEARER_TOKEN')
-    return token == expected_token
+
 
 
 def get_auth_info():
