@@ -87,25 +87,4 @@ class BackgroundRemoverService:
                 os.remove(optimized_path)
             raise e
     
-    def validate_quality_settings(self, quality_settings):
-        """Validate quality settings"""
-        required_fields = ['alpha_matting', 'foreground_threshold', 'background_threshold', 'erode_size', 'base_size']
-        
-        for field in required_fields:
-            if field not in quality_settings:
-                raise ValueError(f"Missing required quality setting: {field}")
-        
-        # Validate ranges
-        if not 0 <= quality_settings['foreground_threshold'] <= 255:
-            raise ValueError("Foreground threshold must be between 0 and 255")
-        
-        if not 0 <= quality_settings['background_threshold'] <= 255:
-            raise ValueError("Background threshold must be between 0 and 255")
-        
-        if not 1 <= quality_settings['erode_size'] <= 20:
-            raise ValueError("Erode size must be between 1 and 20")
-        
-        if not 500 <= quality_settings['base_size'] <= 2000:
-            raise ValueError("Base size must be between 500 and 2000")
-        
-        return True 
+ 
