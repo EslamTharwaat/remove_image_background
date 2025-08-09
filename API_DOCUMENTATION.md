@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Background Remover API provides programmatic access to AI-powered background removal functionality. The API supports both single image processing and batch processing via ZIP files.
+The Background Remover API provides programmatic access to AI-powered background removal functionality optimized for human segmentation. The API supports both single image processing and batch processing via ZIP files, specifically designed for removing backgrounds from photos of people wearing clothes.
 
 **Base URL**: `http://localhost:5000/api/v1`
 
@@ -31,7 +31,7 @@ Check if the API service is running.
 
 **POST** `/process`
 
-Process a single image to remove its background.
+Process a single image to remove its background using optimized human segmentation.
 
 **Request Formats:**
 
@@ -42,12 +42,6 @@ Content-Type: multipart/form-data
 
 Form Data:
 - image: [image file]
-- ai_model: [optional] u2net|u2netp|u2net_human_seg|u2net_cloth_seg
-- alpha_matting: [optional] true|false
-- foreground_threshold: [optional] 0-255
-- background_threshold: [optional] 0-255
-- erode_size: [optional] 1-20
-- base_size: [optional] 500-2000
 ```
 
 #### Option 2: Base64 Image (application/x-www-form-urlencoded)
@@ -57,12 +51,6 @@ Content-Type: application/x-www-form-urlencoded
 
 Form Data:
 - image_data: [base64 encoded image]
-- ai_model: [optional] u2net|u2netp|u2net_human_seg|u2net_cloth_seg
-- alpha_matting: [optional] true|false
-- foreground_threshold: [optional] 0-255
-- background_threshold: [optional] 0-255
-- erode_size: [optional] 1-20
-- base_size: [optional] 500-2000
 ```
 
 **Response:**
@@ -71,7 +59,7 @@ Form Data:
   "success": true,
   "message": "Image processed successfully in 2.5 seconds",
   "processing_time": 2.5,
-  "ai_model": "u2net",
+  "ai_model": "u2net_human_seg",
   "original_filename": "example.jpg",
   "processed_image": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...",
   "download_url": "/api/v1/download/no_bg_example.jpg"
@@ -82,7 +70,7 @@ Form Data:
 
 **POST** `/process-zip`
 
-Process multiple images from a ZIP file.
+Process multiple images from a ZIP file using human segmentation.
 
 **Request:**
 ```
@@ -91,12 +79,6 @@ Content-Type: multipart/form-data
 
 Form Data:
 - zip_file: [ZIP file containing images]
-- ai_model: [optional] u2net|u2netp|u2net_human_seg|u2net_cloth_seg
-- alpha_matting: [optional] true|false
-- foreground_threshold: [optional] 0-255
-- background_threshold: [optional] 0-255
-- erode_size: [optional] 1-20
-- base_size: [optional] 500-2000
 ```
 
 **Response:**
@@ -112,7 +94,7 @@ Form Data:
       "original_filename": "image1.jpg",
       "processed_filename": "no_bg_image1.jpg",
       "processing_time": 2.1,
-      "ai_model": "u2net",
+      "ai_model": "u2net_human_seg",
       "download_url": "/api/v1/download/no_bg_image1.jpg"
     }
   ],
@@ -122,14 +104,7 @@ Form Data:
       "error": "Invalid image format"
     }
   ],
-  "quality_settings": {
-    "alpha_matting": false,
-    "foreground_threshold": 240,
-    "background_threshold": 10,
-    "erode_size": 10,
-    "base_size": 1000
-  },
-  "ai_model": "u2net"
+  "ai_model": "u2net_human_seg"
 }
 ```
 
@@ -151,55 +126,72 @@ GET /api/v1/download/no_bg_example.jpg
 
 **GET** `/models`
 
-Get list of available AI models.
+Get information about the AI model used for processing.
 
 **Response:**
 ```json
 {
-  "models": ["u2net", "u2netp", "u2net_human_seg", "u2net_cloth_seg"],
-  "default_model": "u2net"
+  "models": ["u2net_human_seg"],
+  "default_model": "u2net_human_seg",
+  "description": "Optimized for human background removal"
 }
 ```
 
-### 6. Get Default Settings
+### 6. Get Settings Information
 
 **GET** `/settings`
 
-Get default quality settings and limits.
+Get processing settings and limits.
 
 **Response:**
 ```json
 {
-  "default_alpha_matting": false,
-  "default_foreground_threshold": 240,
-  "default_background_threshold": 10,
-  "default_erode_size": 10,
-  "default_base_size": 1000,
+  "alpha_matting": false,
+  "ai_model": "u2net_human_seg",
+  "description": "Fixed settings optimized for human background removal",
   "max_file_size": 16777216,
-  "allowed_extensions": ["png", "jpg", "jpeg", "gif", "bmp", "tiff"]
+  "allowed_extensions": ["jpg", "gif", "bmp", "png", "jpeg", "tiff"]
 }
 ```
 
-## Parameters
+### 7. Test S3 Connection
 
-### AI Models
+**POST** `/test-s3`
 
-| Model | Description | Best For |
-|-------|-------------|----------|
-| `u2net` | General Purpose | Most image types |
-| `u2netp` | Faster Processing | Speed over quality |
-| `u2net_human_seg` | Human Segmentation | People and portraits |
-| `u2net_cloth_seg` | Clothing Segmentation | Fashion and clothing |
+Test S3 connection with provided credentials (used by the web interface).
 
-### Quality Settings
+**Request:**
+```json
+{
+  "enable_s3_upload": true,
+  "s3_bucket_name": "your-bucket",
+  "s3_access_key_id": "your-access-key",
+  "s3_secret_access_key": "your-secret-key",
+  "s3_region_name": "us-east-1"
+}
+```
 
-| Parameter | Type | Range | Default | Description |
-|-----------|------|-------|---------|-------------|
-| `alpha_matting` | boolean | true/false | false | Improves edge quality (slower) |
-| `foreground_threshold` | integer | 0-255 | 240 | Foreground detection sensitivity |
-| `background_threshold` | integer | 0-255 | 10 | Background removal sensitivity |
-| `erode_size` | integer | 1-20 | 10 | Edge refinement |
-| `base_size` | integer | 500-2000 | 1000 | Processing resolution |
+**Response:**
+```json
+{
+  "success": true,
+  "message": "S3 connection successful"
+}
+```
+
+## AI Model
+
+The API uses a fixed AI model optimized for human background removal:
+
+| Model | Description | Optimized For |
+|-------|-------------|---------------|
+| `u2net_human_seg` | Human Segmentation | People wearing clothes, fashion photos |
+
+**Key Features:**
+- Specialized for human subjects
+- Optimized for clothing and fashion
+- No quality settings needed - works out of the box
+- Fast processing with excellent results for people
 
 ## File Limits
 
@@ -238,20 +230,16 @@ Common status codes:
 import requests
 import base64
 
-# Process single image
-with open('image.jpg', 'rb') as f:
+# Process single image (simplified - no quality settings needed)
+with open('person_photo.jpg', 'rb') as f:
     files = {'image': f}
-    data = {
-        'ai_model': 'u2net',
-        'alpha_matting': 'false'
-    }
     response = requests.post('http://localhost:5000/api/v1/process', 
-                           files=files, data=data)
+                           files=files)
     result = response.json()
     print(result['message'])
 
 # Process ZIP file
-with open('images.zip', 'rb') as f:
+with open('fashion_photos.zip', 'rb') as f:
     files = {'zip_file': f}
     response = requests.post('http://localhost:5000/api/v1/process-zip', 
                            files=files)
@@ -259,12 +247,9 @@ with open('images.zip', 'rb') as f:
     print(f"Processed {result['successful']} images")
 
 # Base64 image processing
-with open('image.jpg', 'rb') as f:
+with open('portrait.jpg', 'rb') as f:
     image_data = base64.b64encode(f.read()).decode('utf-8')
-    data = {
-        'image_data': image_data,
-        'ai_model': 'u2net_human_seg'
-    }
+    data = {'image_data': image_data}
     response = requests.post('http://localhost:5000/api/v1/process', 
                            data=data)
     result = response.json()
@@ -276,29 +261,25 @@ with open('image.jpg', 'rb') as f:
 ```bash
 # Process single image
 curl -X POST http://localhost:5000/api/v1/process \
-  -F "image=@image.jpg" \
-  -F "ai_model=u2net" \
-  -F "alpha_matting=false"
+  -F "image=@person_photo.jpg"
 
 # Process ZIP file
 curl -X POST http://localhost:5000/api/v1/process-zip \
-  -F "zip_file=@images.zip" \
-  -F "ai_model=u2net_human_seg"
+  -F "zip_file=@fashion_photos.zip"
 
 # Health check
 curl http://localhost:5000/api/v1/health
 
-# Get available models
+# Get model information
 curl http://localhost:5000/api/v1/models
 ```
 
 ### JavaScript Example
 
 ```javascript
-// Process single image
+// Process single image (simplified - no settings needed)
 const formData = new FormData();
 formData.append('image', fileInput.files[0]);
-formData.append('ai_model', 'u2net');
 
 fetch('http://localhost:5000/api/v1/process', {
     method: 'POST',
@@ -321,7 +302,7 @@ fetch('http://localhost:5000/api/v1/process', {
     headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
     },
-    body: `image_data=${encodeURIComponent(imageData)}&ai_model=u2net`
+    body: `image_data=${encodeURIComponent(imageData)}`
 })
 .then(response => response.json())
 .then(data => {
@@ -335,12 +316,21 @@ Currently, no rate limiting is implemented. However, processing is resource-inte
 
 ## Best Practices
 
-1. **Use appropriate AI models** for your image type
-2. **Enable alpha matting** for better quality when speed isn't critical
-3. **Use ZIP files** for batch processing multiple images
-4. **Handle errors gracefully** and implement retry logic
-5. **Monitor processing times** and adjust quality settings accordingly
-6. **Clean up downloaded files** after processing
+1. **Use for human subjects** - API is optimized for people wearing clothes
+2. **Use ZIP files** for batch processing multiple images
+3. **Handle errors gracefully** and implement retry logic
+4. **Monitor processing times** and adjust expectations accordingly
+5. **Clean up downloaded files** after processing
+6. **Ideal for fashion and portrait photography**
+
+## Use Cases
+
+This API is specifically designed for:
+- **Fashion photography**: Remove backgrounds from clothing photos
+- **Portrait photography**: Clean backgrounds from people photos
+- **E-commerce**: Product photos with human models
+- **Social media**: Profile pictures and content creation
+- **Marketing materials**: Professional-looking human subjects
 
 ## Support
 
@@ -348,4 +338,5 @@ For API support and questions:
 - Check the error messages for specific issues
 - Verify file formats and sizes
 - Ensure the service is running and accessible
-- Review the health check endpoint for service status 
+- Review the health check endpoint for service status
+- API is optimized for human subjects - best results with people wearing clothes
