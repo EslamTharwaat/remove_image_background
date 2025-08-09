@@ -28,16 +28,12 @@ class Config:
     ENABLE_ALPHA_MATTING = False  # Disable for speed
     ENABLE_MODEL_CACHING = True
     
-    # Background removal quality settings
+    # Background removal quality settings - simplified for human segmentation
     DEFAULT_ALPHA_MATTING = False
-    DEFAULT_ALPHA_MATTING_FOREGROUND_THRESHOLD = 240
-    DEFAULT_ALPHA_MATTING_BACKGROUND_THRESHOLD = 10
-    DEFAULT_ALPHA_MATTING_ERODE_SIZE = 10
-    DEFAULT_ALPHA_MATTING_BASE_SIZE = 1000
     
-    # AI model settings
-    AVAILABLE_MODELS = ['u2net', 'u2netp', 'u2net_human_seg', 'u2net_cloth_seg']
-    DEFAULT_MODEL = 'u2net'
+    # AI model settings - optimized for humans wearing clothes
+    AVAILABLE_MODELS = ['u2net_human_seg']
+    DEFAULT_MODEL = 'u2net_human_seg'
     
     # S3 Configuration
     ENABLE_S3_UPLOAD = False

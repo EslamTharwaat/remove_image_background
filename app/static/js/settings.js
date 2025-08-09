@@ -56,27 +56,58 @@ function initializeSettings() {
     // Load saved settings from localStorage
     loadSettings();
     
-    // Update slider values display
-    updateSliderValues();
+    // Initialize S3 UI state
+    updateS3UI();
 }
 
 function setupEventListeners() {
-    // Add event listeners for sliders
-    const sliders = ['foregroundThreshold', 'backgroundThreshold', 'erodeSize', 'baseSize'];
-    sliders.forEach(id => {
-        const slider = document.getElementById(id);
-        if (slider) {
-            slider.addEventListener('input', updateSliderValues);
-        }
-    });
+    // No general event listeners needed for simplified settings page
+    // All S3-specific listeners are handled in setupS3EventListeners()
 }
 
-function updateSliderValues() {
-    // Update all slider value displays
-    document.getElementById('foregroundThresholdValue').textContent = document.getElementById('foregroundThreshold').value;
-    document.getElementById('backgroundThresholdValue').textContent = document.getElementById('backgroundThreshold').value;
-    document.getElementById('erodeSizeValue').textContent = document.getElementById('erodeSize').value;
-    document.getElementById('baseSizeValue').textContent = document.getElementById('baseSize').value;
+// updateSliderValues function removed - no longer needed for simplified settings page
+
+function validateS3Settings() {
+    const enableS3Checkbox = document.getElementById('enableS3Upload');
+    
+    // If S3 upload is not enabled, no validation needed
+    if (!enableS3Checkbox.checked) {
+        return true;
+    }
+    
+    // Required S3 fields when S3 upload is enabled
+    const requiredFields = [
+        { id: 's3BucketName', name: 'S3 Bucket Name' },
+        { id: 's3AccessKeyId', name: 'Access Key ID' },
+        { id: 's3SecretAccessKey', name: 'Secret Access Key' },
+        { id: 's3RegionName', name: 'Region' }
+    ];
+    
+    const emptyFields = [];
+    
+    // Check each required field
+    requiredFields.forEach(field => {
+        const element = document.getElementById(field.id);
+        if (element && (!element.value || element.value.trim() === '')) {
+            emptyFields.push(field.name);
+            // Add visual indication of error
+            element.style.borderColor = '#dc3545';
+            element.style.boxShadow = '0 0 0 3px rgba(220, 53, 69, 0.1)';
+        } else if (element) {
+            // Remove error styling if field is now filled
+            element.style.borderColor = '#e9ecef';
+            element.style.boxShadow = '';
+        }
+    });
+    
+    // If there are empty fields, show error and prevent saving
+    if (emptyFields.length > 0) {
+        const message = `Please fill in all required S3 fields: ${emptyFields.join(', ')}`;
+        showNotification(message, 'error');
+        return false;
+    }
+    
+    return true;
 }
 
 function setQualityPreset(preset) {
@@ -99,13 +130,7 @@ function setQualityPreset(preset) {
 
 function getCurrentSettings() {
     return {
-        ai_model: document.getElementById('aiModel').value,
-        alpha_matting: document.getElementById('alphaMatting').checked,
-        foreground_threshold: parseInt(document.getElementById('foregroundThreshold').value),
-        background_threshold: parseInt(document.getElementById('backgroundThreshold').value),
-        erode_size: parseInt(document.getElementById('erodeSize').value),
-        base_size: parseInt(document.getElementById('baseSize').value),
-        // S3 settings
+        // S3 settings only (AI model settings removed as they don't exist in current template)
         enable_s3_upload: document.getElementById('enableS3Upload').checked,
         s3_bucket_name: document.getElementById('s3BucketName').value,
         s3_access_key_id: document.getElementById('s3AccessKeyId').value,
@@ -116,6 +141,11 @@ function getCurrentSettings() {
 }
 
 function saveSettings() {
+    // Validate S3 settings if S3 upload is enabled
+    if (!validateS3Settings()) {
+        return; // Don't save if validation fails
+    }
+    
     const settings = getCurrentSettings();
     
     // Save to localStorage
@@ -134,15 +164,7 @@ function loadSettings() {
     if (savedSettings) {
         const settings = JSON.parse(savedSettings);
         
-        // Apply saved settings
-        document.getElementById('aiModel').value = settings.ai_model || DEFAULT_SETTINGS.ai_model;
-        document.getElementById('alphaMatting').checked = settings.alpha_matting || DEFAULT_SETTINGS.alpha_matting;
-        document.getElementById('foregroundThreshold').value = settings.foreground_threshold || DEFAULT_SETTINGS.foreground_threshold;
-        document.getElementById('backgroundThreshold').value = settings.background_threshold || DEFAULT_SETTINGS.background_threshold;
-        document.getElementById('erodeSize').value = settings.erode_size || DEFAULT_SETTINGS.erode_size;
-        document.getElementById('baseSize').value = settings.base_size || DEFAULT_SETTINGS.base_size;
-        
-        // Load S3 settings
+        // Load S3 settings only (AI model settings removed)
         document.getElementById('enableS3Upload').checked = settings.enable_s3_upload || DEFAULT_SETTINGS.enable_s3_upload;
         document.getElementById('s3BucketName').value = settings.s3_bucket_name || DEFAULT_SETTINGS.s3_bucket_name;
         document.getElementById('s3AccessKeyId').value = settings.s3_access_key_id || DEFAULT_SETTINGS.s3_access_key_id;
@@ -170,14 +192,7 @@ function resetSettings() {
 }
 
 function applyDefaultSettings() {
-    document.getElementById('aiModel').value = DEFAULT_SETTINGS.ai_model;
-    document.getElementById('alphaMatting').checked = DEFAULT_SETTINGS.alpha_matting;
-    document.getElementById('foregroundThreshold').value = DEFAULT_SETTINGS.foreground_threshold;
-    document.getElementById('backgroundThreshold').value = DEFAULT_SETTINGS.background_threshold;
-    document.getElementById('erodeSize').value = DEFAULT_SETTINGS.erode_size;
-    document.getElementById('baseSize').value = DEFAULT_SETTINGS.base_size;
-    
-    // Apply default S3 settings
+    // Apply default S3 settings only (AI model settings removed)
     document.getElementById('enableS3Upload').checked = DEFAULT_SETTINGS.enable_s3_upload;
     document.getElementById('s3BucketName').value = DEFAULT_SETTINGS.s3_bucket_name;
     document.getElementById('s3AccessKeyId').value = DEFAULT_SETTINGS.s3_access_key_id;
@@ -185,7 +200,6 @@ function applyDefaultSettings() {
     document.getElementById('s3RegionName').value = DEFAULT_SETTINGS.s3_region_name;
     document.getElementById('s3FolderPrefix').value = DEFAULT_SETTINGS.s3_folder_prefix;
     
-    updateSliderValues();
     updateS3UI();
 }
 
@@ -232,19 +246,36 @@ function setupS3EventListeners() {
     const enableS3Checkbox = document.getElementById('enableS3Upload');
     const s3Credentials = document.getElementById('s3Credentials');
     
+    // Check if S3 elements exist
+    if (!enableS3Checkbox) {
+        console.log('Enable S3 checkbox not found');
+        return;
+    }
+    
     // Toggle S3 credentials visibility
     enableS3Checkbox.addEventListener('change', function() {
+        console.log('S3 checkbox changed:', this.checked);
         updateS3UI();
     });
     
-    // Test S3 connection when credentials change
+    // Test S3 connection and validate when credentials change
     const s3Inputs = ['s3BucketName', 's3AccessKeyId', 's3SecretAccessKey', 's3RegionName'];
     s3Inputs.forEach(inputId => {
         const input = document.getElementById(inputId);
         if (input) {
+            // Validate on blur (when user leaves the field)
             input.addEventListener('blur', function() {
                 if (enableS3Checkbox.checked) {
+                    validateS3Settings(); // Real-time validation
                     testS3Connection();
+                }
+            });
+            
+            // Clear error styling on input (when user starts typing)
+            input.addEventListener('input', function() {
+                if (enableS3Checkbox.checked && this.value.trim() !== '') {
+                    this.style.borderColor = '#e9ecef';
+                    this.style.boxShadow = '';
                 }
             });
         }
@@ -256,12 +287,24 @@ function updateS3UI() {
     const s3Credentials = document.getElementById('s3Credentials');
     const s3Status = document.getElementById('s3Status');
     
+    // Check if elements exist
+    if (!enableS3Checkbox || !s3Credentials) {
+        console.log('S3 elements not found');
+        return;
+    }
+    
     if (enableS3Checkbox.checked) {
-        s3Credentials.classList.remove('hidden');
-        testS3Connection();
+        s3Credentials.style.display = 'block';
+        console.log('S3 credentials shown');
+        if (s3Status) {
+            testS3Connection();
+        }
     } else {
-        s3Credentials.classList.add('hidden');
-        updateS3Status('disabled', 'S3 upload disabled');
+        s3Credentials.style.display = 'none';
+        console.log('S3 credentials hidden');
+        if (s3Status) {
+            updateS3Status('disabled', 'S3 upload disabled');
+        }
     }
 }
 

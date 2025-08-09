@@ -51,19 +51,13 @@ def init_routes(app, config):
         if not is_valid:
             return jsonify({'error': error_message}), 400
         
-        # Get quality settings from request
+        # Simplified settings for human segmentation (no complex quality settings needed)
         quality_settings = {
-            'alpha_matting': request.form.get('alpha_matting', 'false').lower() == 'true',
-            'foreground_threshold': int(request.form.get('foreground_threshold', config.DEFAULT_ALPHA_MATTING_FOREGROUND_THRESHOLD)),
-            'background_threshold': int(request.form.get('background_threshold', config.DEFAULT_ALPHA_MATTING_BACKGROUND_THRESHOLD)),
-            'erode_size': int(request.form.get('erode_size', config.DEFAULT_ALPHA_MATTING_ERODE_SIZE)),
-            'base_size': int(request.form.get('base_size', config.DEFAULT_ALPHA_MATTING_BASE_SIZE))
+            'alpha_matting': False  # Disabled for human segmentation
         }
         
-        # Get AI model selection
-        ai_model = request.form.get('ai_model', config.DEFAULT_MODEL)
-        if ai_model not in config.AVAILABLE_MODELS:
-            ai_model = config.DEFAULT_MODEL
+        # Use human segmentation model
+        ai_model = 'u2net_human_seg'
         
         if file and allowed_file(file.filename, config.ALLOWED_EXTENSIONS):
             # Generate secure filename
@@ -144,19 +138,13 @@ def init_routes(app, config):
         if not files or all(file.filename == '' for file in files):
             return jsonify({'error': 'No files selected'}), 400
         
-        # Get quality settings from request
+        # Simplified settings for human segmentation (no complex quality settings needed)
         quality_settings = {
-            'alpha_matting': request.form.get('alpha_matting', 'false').lower() == 'true',
-            'foreground_threshold': int(request.form.get('foreground_threshold', config.DEFAULT_ALPHA_MATTING_FOREGROUND_THRESHOLD)),
-            'background_threshold': int(request.form.get('background_threshold', config.DEFAULT_ALPHA_MATTING_BACKGROUND_THRESHOLD)),
-            'erode_size': int(request.form.get('erode_size', config.DEFAULT_ALPHA_MATTING_ERODE_SIZE)),
-            'base_size': int(request.form.get('base_size', config.DEFAULT_ALPHA_MATTING_BASE_SIZE))
+            'alpha_matting': False  # Disabled for human segmentation
         }
         
-        # Get AI model selection
-        ai_model = request.form.get('ai_model', config.DEFAULT_MODEL)
-        if ai_model not in config.AVAILABLE_MODELS:
-            ai_model = config.DEFAULT_MODEL
+        # Use human segmentation model
+        ai_model = 'u2net_human_seg'
         
         # Validate all files
         valid_files = []
@@ -234,69 +222,7 @@ def init_routes(app, config):
         
         return jsonify(status)
     
-    @main.route('/reprocess', methods=['POST'])
-    def reprocess_image():
-        """Reprocess an image with different settings"""
-        # Clean up old files for security
-        cleanup_old_files(config.UPLOAD_FOLDER, config.OUTPUT_FOLDER, config.FILE_CLEANUP_MAX_AGE)
-        
-        # Get image path and settings from request
-        image_path = request.form.get('image_path')
-        if not image_path:
-            return jsonify({'error': 'No image path provided'}), 400
-        
-        # Validate image path for security
-        if not image_path.startswith('/uploads/') or '..' in image_path or '/' in image_path[9:]:
-            return jsonify({'error': 'Invalid image path'}), 400
-        
-        # Get quality settings from request
-        quality_settings = {
-            'alpha_matting': request.form.get('alpha_matting', 'false').lower() == 'true',
-            'foreground_threshold': int(request.form.get('foreground_threshold', config.DEFAULT_ALPHA_MATTING_FOREGROUND_THRESHOLD)),
-            'background_threshold': int(request.form.get('background_threshold', config.DEFAULT_ALPHA_MATTING_BACKGROUND_THRESHOLD)),
-            'erode_size': int(request.form.get('erode_size', config.DEFAULT_ALPHA_MATTING_ERODE_SIZE)),
-            'base_size': int(request.form.get('base_size', config.DEFAULT_ALPHA_MATTING_BASE_SIZE))
-        }
-        
-        # Get AI model selection
-        ai_model = request.form.get('ai_model', config.DEFAULT_MODEL)
-        if ai_model not in config.AVAILABLE_MODELS:
-            ai_model = config.DEFAULT_MODEL
-        
-        try:
-            # Extract filename from path
-            filename = image_path.split('/')[-1]
-            filepath = safe_join(config.UPLOAD_FOLDER, filename)
-            
-            if filepath is None or not os.path.exists(filepath):
-                return jsonify({'error': 'Image file not found'}), 404
-            
-            # Remove background
-            output_filename = f"no_bg_{filename}"
-            output_path = safe_join(config.OUTPUT_FOLDER, output_filename)
-            
-            if output_path is None:
-                return jsonify({'error': 'Invalid output path'}), 400
-            
-            # Process image
-            result = background_remover.process_image(
-                filepath, 
-                output_path, 
-                quality_settings, 
-                ai_model
-            )
-            
-            return jsonify({
-                'success': True,
-                'original_image': image_path,
-                'processed_image': f'/outputs/{output_filename}',
-                'message': f'Image reprocessed successfully in {result["processing_time"]} seconds!',
-                'processing_time': result['processing_time'],
-                'ai_model': result['ai_model']
-            })
-            
-        except Exception as e:
-            return jsonify({'error': f'Error reprocessing image: {str(e)}'}), 500
+
     
 
     

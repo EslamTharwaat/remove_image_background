@@ -57,15 +57,10 @@ class BackgroundRemoverService:
             with open(optimized_path, 'rb') as input_file:
                 input_data = input_file.read()
             
-            # Remove background using AI model
+            # Remove background using human segmentation model (optimized for people with clothes)
             output_data = bg.remove(
                 input_data,
-                model_name=ai_model,
-                alpha_matting=quality_settings.get('alpha_matting', self.config.DEFAULT_ALPHA_MATTING),
-                alpha_matting_foreground_threshold=quality_settings.get('foreground_threshold', self.config.DEFAULT_ALPHA_MATTING_FOREGROUND_THRESHOLD),
-                alpha_matting_background_threshold=quality_settings.get('background_threshold', self.config.DEFAULT_ALPHA_MATTING_BACKGROUND_THRESHOLD),
-                alpha_matting_erode_structure_size=quality_settings.get('erode_size', self.config.DEFAULT_ALPHA_MATTING_ERODE_SIZE),
-                alpha_matting_base_size=quality_settings.get('base_size', self.config.DEFAULT_ALPHA_MATTING_BASE_SIZE)
+                model_name='u2net_human_seg'
             )
             
             # Save processed image

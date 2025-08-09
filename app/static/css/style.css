@@ -127,155 +127,7 @@ body {
     border-radius: 4px;
 }
 
-.upload-buttons {
-    margin-top: 20px;
-    display: flex;
-    gap: 15px;
-    justify-content: center;
-    flex-wrap: wrap;
-}
 
-/* Quality settings styles */
-.quality-settings {
-    margin-top: 30px;
-    padding: 25px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    border: 1px solid #e9ecef;
-}
-
-.ai-model-selection {
-    margin-bottom: 25px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid #e9ecef;
-}
-
-.ai-model-selection label {
-    display: block;
-    font-weight: 600;
-    color: #000;
-    margin-bottom: 8px;
-}
-
-.ai-model-selection select {
-    width: 100%;
-    padding: 12px;
-    border: 2px solid #e9ecef;
-    border-radius: 6px;
-    background: white;
-    font-size: 1rem;
-    color: #333;
-    cursor: pointer;
-    transition: border-color 0.3s ease;
-}
-
-.ai-model-selection select:focus {
-    outline: none;
-    border-color: #000;
-}
-
-.ai-model-selection small {
-    display: block;
-    color: #6c757d;
-    font-size: 0.85rem;
-    margin-top: 5px;
-}
-
-.quality-settings h4 {
-    margin: 0 0 20px 0;
-    color: #000;
-    font-size: 1.1rem;
-    font-weight: 600;
-}
-
-.settings-grid {
-    display: grid;
-    gap: 20px;
-    margin-bottom: 20px;
-}
-
-.setting-item {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.setting-item label {
-    font-weight: 500;
-    color: #333;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.setting-item input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    accent-color: #000;
-}
-
-.setting-item small {
-    color: #6c757d;
-    font-size: 0.85rem;
-}
-
-.slider {
-    width: 100%;
-    height: 6px;
-    border-radius: 3px;
-    background: #e9ecef;
-    outline: none;
-    -webkit-appearance: none;
-}
-
-.slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: #000;
-    cursor: pointer;
-}
-
-.slider::-moz-range-thumb {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: #000;
-    cursor: pointer;
-    border: none;
-}
-
-.slider-value {
-    font-weight: 600;
-    color: #000;
-    min-width: 40px;
-    text-align: right;
-}
-
-.quality-presets {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    flex-wrap: wrap;
-}
-
-.btn-sm {
-    padding: 8px 16px;
-    font-size: 0.9rem;
-}
-
-.btn-outline {
-    background: transparent;
-    border: 2px solid #000;
-    color: #000;
-}
-
-.btn-outline:hover {
-    background: #000;
-    color: white;
-}
 
 /* Button styles */
 .btn {
@@ -708,28 +560,31 @@ body {
 
 /* Settings page styles */
 .settings-section {
-    max-width: 800px;
+    max-width: 90vw;
     margin: 0 auto;
     background: white;
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     overflow: hidden;
+    /* Force cache refresh - width updated to 90% of viewport width */
 }
 
 .settings-header {
-    padding: 30px;
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 40px 30px;
+    background: #f8f9fa;
     border-bottom: 1px solid #e9ecef;
+    text-align: center;
 }
 
 .settings-header h2 {
-    margin: 0 0 10px 0;
+    margin: 0;
     color: #000;
-    font-size: 1.8rem;
+    font-size: 2.2rem;
     font-weight: 600;
     display: flex;
     align-items: center;
-    gap: 10px;
+    justify-content: center;
+    gap: 15px;
 }
 
 .settings-header p {
@@ -803,19 +658,34 @@ body {
 
 /* S3 Settings styles */
 .s3-settings-section {
-    background: white;
-    border: 2px solid #e9ecef;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
     border-radius: 12px;
-    padding: 25px;
-    margin: 20px 0;
+    padding: 0;
+    margin: 30px 0;
+    overflow: hidden;
 }
 
-.s3-settings-section h3 {
-    color: #000;
-    margin-bottom: 10px;
+.section-header {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    padding: 20px 25px;
+    margin: 0;
+}
+
+.section-header h3 {
+    color: white;
+    margin: 0 0 8px 0;
+    font-size: 1.3rem;
     display: flex;
     align-items: center;
     gap: 10px;
+}
+
+.section-header .section-description {
+    color: rgba(255,255,255,0.9);
+    margin: 0;
+    font-size: 0.95rem;
 }
 
 .section-description {
@@ -824,23 +694,44 @@ body {
     font-size: 0.95rem;
 }
 
-.s3-toggle {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    cursor: pointer;
-    font-weight: 500;
+.s3-settings {
+    padding: 25px;
 }
 
-.s3-toggle input[type="checkbox"] {
-    width: 20px;
-    height: 20px;
-    accent-color: #000;
+.setting-item {
+    margin-bottom: 20px;
 }
 
-.toggle-label {
-    color: #000;
-    font-weight: 500;
+.setting-item label {
+    display: block;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+}
+
+.setting-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.setting-input:focus {
+    outline: none;
+    border-color: #4a90e2;
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+.setting-item small {
+    display: block;
+    color: #6c757d;
+    font-size: 0.85rem;
+    margin-top: 5px;
+    font-style: italic;
 }
 
 .s3-credentials {
@@ -851,23 +742,43 @@ body {
     border: 1px solid #e9ecef;
 }
 
-.s3-credentials.hidden {
-    display: none;
+.s3-toggle {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    font-weight: 500;
+    padding: 15px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    transition: all 0.3s ease;
+}
+
+.s3-toggle:hover {
+    background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+    transform: translateY(-1px);
+}
+
+.s3-toggle input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: #28a745;
+    cursor: pointer;
 }
 
 .s3-status {
     margin-top: 15px;
-    padding: 10px 15px;
-    border-radius: 6px;
+    padding: 15px;
     background: #f8f9fa;
+    border-radius: 8px;
     border: 1px solid #e9ecef;
 }
 
 .status-indicator {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 0.9rem;
+    gap: 10px;
 }
 
 .status-icon {
@@ -887,9 +798,28 @@ body {
 }
 
 .status-text {
-    color: #495057;
+    font-size: 0.9rem;
     font-weight: 500;
 }
+
+.toggle-label {
+    color: #000;
+    font-weight: 500;
+}
+
+.required-indicator {
+    color: #dc3545;
+    font-weight: bold;
+    margin-left: 2px;
+}
+
+/* Error state for required fields */
+.setting-input.error {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1) !important;
+}
+
+
 
 /* Notification styles */
 .notification {

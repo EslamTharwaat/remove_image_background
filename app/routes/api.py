@@ -51,19 +51,13 @@ def init_api_routes(app, config):
         # Clean up old files
         cleanup_old_files(config_instance.UPLOAD_FOLDER, config_instance.OUTPUT_FOLDER, config_instance.FILE_CLEANUP_MAX_AGE)
         
-        # Get quality settings from request
+        # Fixed settings for human segmentation (API uses same simplified settings as web UI)
         quality_settings = {
-            'alpha_matting': request.form.get('alpha_matting', 'false').lower() == 'true',
-            'foreground_threshold': int(request.form.get('foreground_threshold', config_instance.DEFAULT_ALPHA_MATTING_FOREGROUND_THRESHOLD)),
-            'background_threshold': int(request.form.get('background_threshold', config_instance.DEFAULT_ALPHA_MATTING_BACKGROUND_THRESHOLD)),
-            'erode_size': int(request.form.get('erode_size', config_instance.DEFAULT_ALPHA_MATTING_ERODE_SIZE)),
-            'base_size': int(request.form.get('base_size', config_instance.DEFAULT_ALPHA_MATTING_BASE_SIZE))
+            'alpha_matting': False  # Disabled for human segmentation
         }
         
-        # Get AI model
-        ai_model = request.form.get('ai_model', config_instance.DEFAULT_MODEL)
-        if ai_model not in config_instance.AVAILABLE_MODELS:
-            ai_model = config_instance.DEFAULT_MODEL
+        # Use human segmentation model (API is optimized for human background removal)
+        ai_model = 'u2net_human_seg'
         
         # Check for file upload
         if 'image' in request.files:
@@ -181,19 +175,13 @@ def init_api_routes(app, config):
         if not is_valid:
             raise BadRequest(error_message)
         
-        # Get quality settings
+        # Fixed settings for human segmentation (API uses same simplified settings as web UI)
         quality_settings = {
-            'alpha_matting': request.form.get('alpha_matting', 'false').lower() == 'true',
-            'foreground_threshold': int(request.form.get('foreground_threshold', config_instance.DEFAULT_ALPHA_MATTING_FOREGROUND_THRESHOLD)),
-            'background_threshold': int(request.form.get('background_threshold', config_instance.DEFAULT_ALPHA_MATTING_BACKGROUND_THRESHOLD)),
-            'erode_size': int(request.form.get('erode_size', config_instance.DEFAULT_ALPHA_MATTING_ERODE_SIZE)),
-            'base_size': int(request.form.get('base_size', config_instance.DEFAULT_ALPHA_MATTING_BASE_SIZE))
+            'alpha_matting': False  # Disabled for human segmentation
         }
         
-        # Get AI model
-        ai_model = request.form.get('ai_model', config_instance.DEFAULT_MODEL)
-        if ai_model not in config_instance.AVAILABLE_MODELS:
-            ai_model = config_instance.DEFAULT_MODEL
+        # Use human segmentation model (API is optimized for human background removal)
+        ai_model = 'u2net_human_seg'
         
         try:
             # Create temporary extraction folder
@@ -275,21 +263,20 @@ def init_api_routes(app, config):
     
     @api.route('/models', methods=['GET'])
     def get_available_models():
-        """Get list of available AI models"""
+        """Get list of available AI models (fixed to human segmentation)"""
         return jsonify({
-            'models': config_instance.AVAILABLE_MODELS,
-            'default_model': config_instance.DEFAULT_MODEL
+            'models': ['u2net_human_seg'],
+            'default_model': 'u2net_human_seg',
+            'description': 'Optimized for human background removal'
         })
     
     @api.route('/settings', methods=['GET'])
     def get_default_settings():
-        """Get default quality settings"""
+        """Get default quality settings (fixed for human segmentation)"""
         return jsonify({
-            'default_alpha_matting': config_instance.DEFAULT_ALPHA_MATTING,
-            'default_foreground_threshold': config_instance.DEFAULT_ALPHA_MATTING_FOREGROUND_THRESHOLD,
-            'default_background_threshold': config_instance.DEFAULT_ALPHA_MATTING_BACKGROUND_THRESHOLD,
-            'default_erode_size': config_instance.DEFAULT_ALPHA_MATTING_ERODE_SIZE,
-            'default_base_size': config_instance.DEFAULT_ALPHA_MATTING_BASE_SIZE,
+            'alpha_matting': False,
+            'ai_model': 'u2net_human_seg',
+            'description': 'Fixed settings optimized for human background removal',
             'max_file_size': config_instance.MAX_CONTENT_LENGTH,
             'allowed_extensions': list(config_instance.ALLOWED_EXTENSIONS)
         })

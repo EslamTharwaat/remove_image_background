@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings - Background Remover</title>
+    <title>Settings - Otrium AI Background Remover</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='none' stroke='%23000' stroke-width='8'/><text x='50' y='65' font-family='Arial, sans-serif' font-size='50' font-weight='bold' text-anchor='middle' fill='%23000'>R</text></svg>">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=1754732926">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='none' stroke='%23000' stroke-width='8'/><text x='50' y='65' font-family='Arial, sans-serif' font-size='50' font-weight='bold' text-anchor='middle' fill='%23000'>O</text></svg>">
 </head>
 <body>
     <div class="container">
@@ -16,7 +16,7 @@
                 <i class="fas fa-magic"></i>
                 <h1>Settings</h1>
             </div>
-            <p class="subtitle">Configure AI models and quality settings</p>
+            <p class="subtitle">Configure AI background removal settings</p>
         </header>
 
         <nav class="navigation">
@@ -33,78 +33,17 @@
         <main class="main-content">
             <div class="settings-section">
                 <div class="settings-header">
-                    <h2><i class="fas fa-robot"></i> AI Model & Quality Settings</h2>
-                    <p>Configure the AI models and processing quality for background removal</p>
+                    <h2><i class="fas fa-cog"></i> Settings</h2>
                 </div>
 
                 <div class="settings-content">
-                    <div class="ai-model-selection">
-                        <label for="aiModel">AI Model:</label>
-                        <select id="aiModel" name="aiModel">
-                            <option value="u2net">U²-Net (General Purpose)</option>
-                            <option value="u2netp">U²-Net+ (Faster)</option>
-                            <option value="u2net_human_seg">U²-Net Human Segmentation</option>
-                            <option value="u2net_cloth_seg">U²-Net Clothing Segmentation</option>
-                        </select>
-                        <small>Choose the best AI model for your image type</small>
-                    </div>
-                    
-                    <div class="settings-grid">
-                        <div class="setting-item">
-                            <label for="alphaMatting">
-                                <input type="checkbox" id="alphaMatting" name="alphaMatting">
-                                Enable Alpha Matting (Better Quality)
-                            </label>
-                            <small>Improves edge quality but slower processing</small>
-                        </div>
-                        
-                        <div class="setting-item">
-                            <label for="foregroundThreshold">Foreground Threshold:</label>
-                            <input type="range" id="foregroundThreshold" min="0" max="255" value="240" class="slider">
-                            <span class="slider-value" id="foregroundThresholdValue">240</span>
-                        </div>
-                        
-                        <div class="setting-item">
-                            <label for="backgroundThreshold">Background Threshold:</label>
-                            <input type="range" id="backgroundThreshold" min="0" max="255" value="10" class="slider">
-                            <span class="slider-value" id="backgroundThresholdValue">10</span>
-                        </div>
-                        
-                        <div class="setting-item">
-                            <label for="erodeSize">Erode Size:</label>
-                            <input type="range" id="erodeSize" min="1" max="20" value="10" class="slider">
-                            <span class="slider-value" id="erodeSizeValue">10</span>
-                        </div>
-                        
-                        <div class="setting-item">
-                            <label for="baseSize">Base Size:</label>
-                            <input type="range" id="baseSize" min="500" max="2000" step="100" value="1000" class="slider">
-                            <span class="slider-value" id="baseSizeValue">1000</span>
-                        </div>
-                    </div>
-                    
-                    <div class="quality-presets">
-                        <h3>Quick Presets</h3>
-                        <div class="preset-buttons">
-                            <button class="btn btn-sm btn-outline" onclick="setQualityPreset('fast')">
-                                <i class="fas fa-bolt"></i>
-                                Fast
-                            </button>
-                            <button class="btn btn-sm btn-outline" onclick="setQualityPreset('balanced')">
-                                <i class="fas fa-balance-scale"></i>
-                                Balanced
-                            </button>
-                            <button class="btn btn-sm btn-outline" onclick="setQualityPreset('high')">
-                                <i class="fas fa-star"></i>
-                                High Quality
-                            </button>
-                        </div>
-                    </div>
 
                     <!-- S3 Upload Configuration -->
                     <div class="s3-settings-section">
-                        <h3><i class="fas fa-cloud-upload-alt"></i> S3 Upload Settings</h3>
-                        <p class="section-description">Configure AWS S3 for automatic upload of processed images</p>
+                        <div class="section-header">
+                            <h3><i class="fas fa-cloud-upload-alt"></i> S3 Upload Settings</h3>
+                            <p class="section-description">Configure AWS S3 for automatic upload of processed images</p>
+                        </div>
                         
                         <div class="s3-settings">
                             <div class="setting-item">
@@ -115,28 +54,28 @@
                                 <small>Automatically upload processed images to AWS S3 bucket</small>
                             </div>
                             
-                            <div class="s3-credentials" id="s3Credentials">
+                            <div class="s3-credentials" id="s3Credentials" style="display: none;">
                                 <div class="setting-item">
-                                    <label for="s3BucketName">S3 Bucket Name:</label>
-                                    <input type="text" id="s3BucketName" name="s3BucketName" class="setting-input" placeholder="my-background-remover-bucket">
+                                    <label for="s3BucketName">S3 Bucket Name: <span class="required-indicator">*</span></label>
+                                    <input type="text" id="s3BucketName" name="s3BucketName" class="setting-input" placeholder="my-background-remover-bucket" required>
                                     <small>The name of your AWS S3 bucket</small>
                                 </div>
                                 
                                 <div class="setting-item">
-                                    <label for="s3AccessKeyId">Access Key ID:</label>
-                                    <input type="text" id="s3AccessKeyId" name="s3AccessKeyId" class="setting-input" placeholder="AKIA...">
+                                    <label for="s3AccessKeyId">Access Key ID: <span class="required-indicator">*</span></label>
+                                    <input type="text" id="s3AccessKeyId" name="s3AccessKeyId" class="setting-input" placeholder="AKIA..." required>
                                     <small>Your AWS Access Key ID</small>
                                 </div>
                                 
                                 <div class="setting-item">
-                                    <label for="s3SecretAccessKey">Secret Access Key:</label>
-                                    <input type="password" id="s3SecretAccessKey" name="s3SecretAccessKey" class="setting-input" placeholder="Secret key...">
+                                    <label for="s3SecretAccessKey">Secret Access Key: <span class="required-indicator">*</span></label>
+                                    <input type="password" id="s3SecretAccessKey" name="s3SecretAccessKey" class="setting-input" placeholder="Secret key..." required>
                                     <small>Your AWS Secret Access Key</small>
                                 </div>
                                 
                                 <div class="setting-item">
-                                    <label for="s3RegionName">Region:</label>
-                                    <select id="s3RegionName" name="s3RegionName" class="setting-input">
+                                    <label for="s3RegionName">Region: <span class="required-indicator">*</span></label>
+                                    <select id="s3RegionName" name="s3RegionName" class="setting-input" required>
                                         <option value="us-east-1">US East (N. Virginia) - us-east-1</option>
                                         <option value="us-west-2">US West (Oregon) - us-west-2</option>
                                         <option value="eu-west-1">Europe (Ireland) - eu-west-1</option>
@@ -162,29 +101,7 @@
                         </div>
                     </div>
 
-                    <div class="settings-info">
-                        <h3><i class="fas fa-info-circle"></i> Settings Information</h3>
-                        <div class="info-grid">
-                            <div class="info-item">
-                                <h4>AI Models</h4>
-                                <ul>
-                                    <li><strong>U²-Net:</strong> Best for most image types</li>
-                                    <li><strong>U²-Net+:</strong> Optimized for speed</li>
-                                    <li><strong>Human Segmentation:</strong> Specialized for people</li>
-                                    <li><strong>Clothing Segmentation:</strong> Best for fashion items</li>
-                                </ul>
-                            </div>
-                            <div class="info-item">
-                                <h4>Quality Settings</h4>
-                                <ul>
-                                    <li><strong>Alpha Matting:</strong> Improves edge quality</li>
-                                    <li><strong>Thresholds:</strong> Control detection sensitivity</li>
-                                    <li><strong>Erode Size:</strong> Affects edge refinement</li>
-                                    <li><strong>Base Size:</strong> Controls processing resolution</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
+
 
                     <div class="settings-actions">
                         <button class="btn btn-primary" onclick="saveSettings()">
@@ -201,10 +118,32 @@
         </main>
 
         <footer class="footer">
-            <p>&copy; 2024 Background Remover. Made with ❤️ by Eslam Tharwat</p>
+            <p>&copy; 2025 Otrium.com. Professional AI Image Processing.</p>
         </footer>
     </div>
 
     <script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+    <script>
+        // Simple backup toggle functionality in case main JS fails
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkbox = document.getElementById('enableS3Upload');
+            const credentials = document.getElementById('s3Credentials');
+            
+            if (checkbox && credentials) {
+                // Set initial state
+                credentials.style.display = checkbox.checked ? 'block' : 'none';
+                
+                // Add change listener
+                checkbox.addEventListener('change', function() {
+                    credentials.style.display = this.checked ? 'block' : 'none';
+                    console.log('S3 toggle changed:', this.checked);
+                });
+                
+                console.log('S3 toggle functionality initialized');
+            } else {
+                console.log('S3 elements not found');
+            }
+        });
+    </script>
 </body>
 </html> 

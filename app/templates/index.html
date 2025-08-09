@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Background Remover - AI Image Processing</title>
+    <title>Otrium - AI Background Remover</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='none' stroke='%23000' stroke-width='8'/><text x='50' y='65' font-family='Arial, sans-serif' font-size='50' font-weight='bold' text-anchor='middle' fill='%23000'>R</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='none' stroke='%23000' stroke-width='8'/><text x='50' y='65' font-family='Arial, sans-serif' font-size='50' font-weight='bold' text-anchor='middle' fill='%23000'>O</text></svg>">
 </head>
 <body>
     <div class="container">
         <header class="header">
             <div class="logo">
-                <i class="fas fa-magic"></i>
-                <h1>Background Remover</h1>
+                <i class="fas fa-home"></i>
+                <h1>Home</h1>
             </div>
-            <p class="subtitle">Remove image backgrounds with AI-powered precision</p>
+            <p class="subtitle">Professional AI Background Removal for Fashion</p>
         </header>
 
         <nav class="navigation">
@@ -36,27 +36,17 @@
                     <div class="upload-content">
                         <i class="fas fa-cloud-upload-alt"></i>
                         <h3>Drop your images here</h3>
-                        <p>or click to browse (supports multiple files)</p>
+                        <p>or click to browse</p>
                         <span class="file-types">Supports: JPG, PNG, GIF, BMP, TIFF, ZIP</span>
                     </div>
                                             <input type="file" id="fileInput" accept="image/*,.zip" multiple hidden>
                 </div>
                 
-                <div class="upload-buttons">
-                    <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
-                        <i class="fas fa-upload"></i>
-                        Choose Images
-                    </button>
-                    <button class="btn btn-secondary" onclick="toggleUploadMode()">
-                        <i class="fas fa-single-image"></i>
-                        Single Image Mode
-                    </button>
-                </div>
-                
+
                 <div class="settings-info">
                     <div class="settings-info-content">
-                        <i class="fas fa-info-circle"></i>
-                        <p>Configure AI models and quality settings in the <a href="/settings" class="settings-link">Settings</a> page</p>
+                        <i class="fas fa-user"></i>
+                        <p>Optimized for removing backgrounds from photos of people wearing clothes using AI human segmentation</p>
                     </div>
                 </div>
             </div>
@@ -137,10 +127,7 @@
                                 <i class="fas fa-download"></i>
                                 Download
                             </button>
-                            <button class="btn btn-primary" onclick="showReprocessModal()">
-                                <i class="fas fa-redo"></i>
-                                Reprocess
-                            </button>
+
                         </div>
                     </div>
                 </div>
@@ -191,7 +178,7 @@
         </main>
 
         <footer class="footer">
-            <p>&copy; 2024 Background Remover. Powered by AI.</p>
+            <p>&copy; 2025 Otrium.com. Professional AI Image Processing.</p>
         </footer>
     </div>
 
@@ -211,82 +198,7 @@
     </script>
     </div>
 
-    <!-- Reprocess Modal -->
-    <div class="modal" id="reprocessModal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Reprocess Image</h3>
-                <button class="modal-close" onclick="hideReprocessModal()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            
-            <div class="modal-body">
-                <div class="reprocess-preview">
-                    <img id="reprocessPreview" src="" alt="Image to reprocess">
-                </div>
-                
-                <div class="reprocess-settings">
-                    <div class="ai-model-selection">
-                        <label for="reprocessAiModel">AI Model:</label>
-                        <select id="reprocessAiModel" name="reprocessAiModel">
-                            <option value="u2net">U²-Net (General Purpose)</option>
-                            <option value="u2netp">U²-Net+ (Faster)</option>
-                            <option value="u2net_human_seg">U²-Net Human Segmentation</option>
-                            <option value="u2net_cloth_seg">U²-Net Clothing Segmentation</option>
-                        </select>
-                    </div>
-                    
-                    <div class="settings-grid">
-                        <div class="setting-item">
-                            <label for="reprocessAlphaMatting">
-                                <input type="checkbox" id="reprocessAlphaMatting" name="reprocessAlphaMatting">
-                                Enable Alpha Matting (Better Quality)
-                            </label>
-                        </div>
-                        
-                        <div class="setting-item">
-                            <label for="reprocessForegroundThreshold">Foreground Threshold:</label>
-                            <input type="range" id="reprocessForegroundThreshold" min="0" max="255" value="240" class="slider">
-                            <span class="slider-value" id="reprocessForegroundThresholdValue">240</span>
-                        </div>
-                        
-                        <div class="setting-item">
-                            <label for="reprocessBackgroundThreshold">Background Threshold:</label>
-                            <input type="range" id="reprocessBackgroundThreshold" min="0" max="255" value="10" class="slider">
-                            <span class="slider-value" id="reprocessBackgroundThresholdValue">10</span>
-                        </div>
-                        
-                        <div class="setting-item">
-                            <label for="reprocessErodeSize">Erode Size:</label>
-                            <input type="range" id="reprocessErodeSize" min="1" max="20" value="10" class="slider">
-                            <span class="slider-value" id="reprocessErodeSizeValue">10</span>
-                        </div>
-                        
-                        <div class="setting-item">
-                            <label for="reprocessBaseSize">Base Size:</label>
-                            <input type="range" id="reprocessBaseSize" min="500" max="2000" step="100" value="1000" class="slider">
-                            <span class="slider-value" id="reprocessBaseSizeValue">1000</span>
-                        </div>
-                    </div>
-                    
-                    <div class="quality-presets">
-                        <button class="btn btn-sm btn-outline" onclick="setReprocessQualityPreset('fast')">Fast</button>
-                        <button class="btn btn-sm btn-outline" onclick="setReprocessQualityPreset('balanced')">Balanced</button>
-                        <button class="btn btn-sm btn-outline" onclick="setReprocessQualityPreset('high')">High Quality</button>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="hideReprocessModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="reprocessImage()">
-                    <i class="fas fa-redo"></i>
-                    Reprocess
-                </button>
-            </div>
-        </div>
-    </div>
+
 
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>

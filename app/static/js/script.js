@@ -3,16 +3,11 @@ let currentProcessedImageUrl = '';
 let currentOriginalImageUrl = '';
 let currentBatchId = null;
 let batchStatusInterval = null;
-let isSingleMode = false;
 
-// Default settings (fallback if no settings are saved)
-const DEFAULT_SETTINGS = {
-    ai_model: 'u2net',
-    alpha_matting: false,
-    foreground_threshold: 240,
-    background_threshold: 10,
-    erode_size: 10,
-    base_size: 1000
+// Fixed settings for human segmentation (no customization needed)
+const FIXED_SETTINGS = {
+    ai_model: 'u2net_human_seg',
+    alpha_matting: false
 };
 
 // DOM elements (will be initialized when DOM is loaded)
@@ -62,9 +57,6 @@ function setupEventListeners() {
     
     // Click to upload
     uploadArea.addEventListener('click', () => fileInput.click());
-    
-    // Setup quality settings
-    setupQualitySettings();
 }
 
 function handleFileSelect(event) {
@@ -106,16 +98,11 @@ function handleDrop(event) {
 }
 
 function processFile(file) {
-    // Check if we're in single mode or batch mode
-    if (isSingleMode) {
-        processSingleFile(file);
+    // Check for batch processing (multiple files or ZIP)
+    if (fileInput.files.length > 1 || file.name.toLowerCase().endsWith('.zip')) {
+        processBatchFiles();
     } else {
-        // For batch mode, we'll handle multiple files
-        if (fileInput.files.length === 1) {
-            processSingleFile(file);
-        } else {
-            processBatchFiles();
-        }
+        processSingleFile(file);
     }
 }
 
@@ -151,14 +138,9 @@ function processSingleFile(file) {
     // Add CSRF token
     formData.append('csrf_token', csrfToken);
     
-    // Add quality settings
-    const qualitySettings = getQualitySettings();
-    formData.append('alpha_matting', qualitySettings.alpha_matting);
-    formData.append('foreground_threshold', qualitySettings.foreground_threshold);
-    formData.append('background_threshold', qualitySettings.background_threshold);
-    formData.append('erode_size', qualitySettings.erode_size);
-    formData.append('base_size', qualitySettings.base_size);
-    formData.append('ai_model', qualitySettings.ai_model);
+    // Add fixed settings for human segmentation
+    formData.append('alpha_matting', FIXED_SETTINGS.alpha_matting);
+    formData.append('ai_model', FIXED_SETTINGS.ai_model);
     
     fetch('/upload', {
         method: 'POST',
@@ -191,7 +173,6 @@ function processBatchFiles() {
     // Validate all files
     for (let file of files) {
         const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp', 'image/tiff'];
-        const allowedExtensions = ['.zip'];
         
         // Check if it's a ZIP file
         const isZipFile = file.name.toLowerCase().endsWith('.zip');
@@ -223,14 +204,9 @@ function processBatchFiles() {
     // Add CSRF token
     formData.append('csrf_token', csrfToken);
     
-    // Add quality settings
-    const qualitySettings = getQualitySettings();
-    formData.append('alpha_matting', qualitySettings.alpha_matting);
-    formData.append('foreground_threshold', qualitySettings.foreground_threshold);
-    formData.append('background_threshold', qualitySettings.background_threshold);
-    formData.append('erode_size', qualitySettings.erode_size);
-    formData.append('base_size', qualitySettings.base_size);
-    formData.append('ai_model', qualitySettings.ai_model);
+    // Add fixed settings for human segmentation
+    formData.append('alpha_matting', FIXED_SETTINGS.alpha_matting);
+    formData.append('ai_model', FIXED_SETTINGS.ai_model);
     
     fetch('/batch-upload', {
         method: 'POST',
@@ -387,168 +363,6 @@ function downloadBatchImage(imageUrl, filename) {
     document.body.removeChild(link);
 }
 
-function toggleUploadMode() {
-    isSingleMode = !isSingleMode;
-    const button = document.querySelector('.btn-secondary');
-    
-    if (isSingleMode) {
-        button.innerHTML = '<i class="fas fa-images"></i> Batch Mode';
-        fileInput.removeAttribute('multiple');
-        uploadArea.querySelector('h3').textContent = 'Drop your image here';
-        uploadArea.querySelector('p').textContent = 'or click to browse';
-    } else {
-        button.innerHTML = '<i class="fas fa-single-image"></i> Single Image Mode';
-        fileInput.setAttribute('multiple', '');
-        uploadArea.querySelector('h3').textContent = 'Drop your images here';
-        uploadArea.querySelector('p').textContent = 'or click to browse (supports multiple files)';
-    }
-}
-
-function getQualitySettings() {
-    // Load settings from localStorage
-    const savedSettings = localStorage.getItem('backgroundRemoverSettings');
-    
-    if (savedSettings) {
-        const settings = JSON.parse(savedSettings);
-        return {
-            alpha_matting: settings.alpha_matting || DEFAULT_SETTINGS.alpha_matting,
-            foreground_threshold: settings.foreground_threshold || DEFAULT_SETTINGS.foreground_threshold,
-            background_threshold: settings.background_threshold || DEFAULT_SETTINGS.background_threshold,
-            erode_size: settings.erode_size || DEFAULT_SETTINGS.erode_size,
-            base_size: settings.base_size || DEFAULT_SETTINGS.base_size,
-            ai_model: settings.ai_model || DEFAULT_SETTINGS.ai_model
-        };
-    }
-    
-    // Return default settings if none saved
-    return {
-        alpha_matting: DEFAULT_SETTINGS.alpha_matting,
-        foreground_threshold: DEFAULT_SETTINGS.foreground_threshold,
-        background_threshold: DEFAULT_SETTINGS.background_threshold,
-        erode_size: DEFAULT_SETTINGS.erode_size,
-        base_size: DEFAULT_SETTINGS.base_size,
-        ai_model: DEFAULT_SETTINGS.ai_model
-    };
-}
-
-function setupQualitySettings() {
-    // This function is kept for compatibility but no longer needed
-    // Settings are now handled in the dedicated settings page
-}
-
-function showReprocessModal() {
-    if (!currentOriginalImageUrl) {
-        showError('No image available for reprocessing.');
-        return;
-    }
-    
-    // Set the preview image
-    document.getElementById('reprocessPreview').src = currentOriginalImageUrl;
-    
-    // Copy current settings to reprocess modal
-    copyCurrentSettingsToReprocess();
-    
-    // Show the modal
-    document.getElementById('reprocessModal').style.display = 'flex';
-}
-
-function hideReprocessModal() {
-    document.getElementById('reprocessModal').style.display = 'none';
-}
-
-function copyCurrentSettingsToReprocess() {
-    // Get current settings from localStorage
-    const currentSettings = getQualitySettings();
-    
-    // Copy AI model
-    document.getElementById('reprocessAiModel').value = currentSettings.ai_model;
-    
-    // Copy quality settings
-    document.getElementById('reprocessAlphaMatting').checked = currentSettings.alpha_matting;
-    document.getElementById('reprocessForegroundThreshold').value = currentSettings.foreground_threshold;
-    document.getElementById('reprocessBackgroundThreshold').value = currentSettings.background_threshold;
-    document.getElementById('reprocessErodeSize').value = currentSettings.erode_size;
-    document.getElementById('reprocessBaseSize').value = currentSettings.base_size;
-    
-    // Update reprocess slider values
-    updateReprocessSliderValues();
-}
-
-function updateReprocessSliderValues() {
-    document.getElementById('reprocessForegroundThresholdValue').textContent = document.getElementById('reprocessForegroundThreshold').value;
-    document.getElementById('reprocessBackgroundThresholdValue').textContent = document.getElementById('reprocessBackgroundThreshold').value;
-    document.getElementById('reprocessErodeSizeValue').textContent = document.getElementById('reprocessErodeSize').value;
-    document.getElementById('reprocessBaseSizeValue').textContent = document.getElementById('reprocessBaseSize').value;
-}
-
-function setReprocessQualityPreset(preset) {
-    const settings = QUALITY_PRESETS[preset];
-    if (!settings) return;
-    
-    document.getElementById('reprocessAlphaMatting').checked = settings.alpha_matting;
-    document.getElementById('reprocessForegroundThreshold').value = settings.foreground_threshold;
-    document.getElementById('reprocessBackgroundThreshold').value = settings.background_threshold;
-    document.getElementById('reprocessErodeSize').value = settings.erode_size;
-    document.getElementById('reprocessBaseSize').value = settings.base_size;
-    
-    // Update display values
-    updateReprocessSliderValues();
-    
-    // Show feedback
-    showSuccessNotification(`Quality preset "${preset}" applied`);
-}
-
-function reprocessImage() {
-    if (!currentOriginalImageUrl) {
-        showError('No image available for reprocessing.');
-        return;
-    }
-    
-    // Show processing section
-    showProcessing();
-    hideReprocessModal();
-    
-    // Get reprocess settings
-    const qualitySettings = {
-        alpha_matting: document.getElementById('reprocessAlphaMatting').checked,
-        foreground_threshold: parseInt(document.getElementById('reprocessForegroundThreshold').value),
-        background_threshold: parseInt(document.getElementById('reprocessBackgroundThreshold').value),
-        erode_size: parseInt(document.getElementById('reprocessErodeSize').value),
-        base_size: parseInt(document.getElementById('reprocessBaseSize').value),
-        ai_model: document.getElementById('reprocessAiModel').value
-    };
-    
-    // Create FormData for reprocessing
-    const formData = new FormData();
-    formData.append('image_path', currentOriginalImageUrl);
-    formData.append('csrf_token', csrfToken);
-    formData.append('alpha_matting', qualitySettings.alpha_matting);
-    formData.append('foreground_threshold', qualitySettings.foreground_threshold);
-    formData.append('background_threshold', qualitySettings.background_threshold);
-    formData.append('erode_size', qualitySettings.erode_size);
-    formData.append('base_size', qualitySettings.base_size);
-    formData.append('ai_model', qualitySettings.ai_model);
-    
-    fetch('/reprocess', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showResults(data.original_image, data.processed_image);
-            currentProcessedImageUrl = data.processed_image;
-            showSuccessNotification(`Image reprocessed successfully with ${data.ai_model} model!`);
-        } else {
-            showError(data.error || 'An error occurred while reprocessing the image.');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showError('Network error. Please check your connection and try again.');
-    });
-}
-
 function showProcessing() {
     if (!uploadSection || !processingSection || !batchProcessingSection || !resultsSection || !batchResultsSection || !errorSection) {
         console.error('DOM elements not initialized');
@@ -656,10 +470,6 @@ function resetApp() {
         batchStatusInterval = null;
     }
     
-    // Reset to batch mode
-    isSingleMode = false;
-    if (fileInput) fileInput.setAttribute('multiple', '');
-    
     // Show upload section
     uploadSection.style.display = 'block';
     processingSection.style.display = 'none';
@@ -687,17 +497,6 @@ function downloadImage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-}
-
-// Add some visual feedback for better UX
-function addLoadingState(element) {
-    element.style.opacity = '0.7';
-    element.style.pointerEvents = 'none';
-}
-
-function removeLoadingState(element) {
-    element.style.opacity = '1';
-    element.style.pointerEvents = 'auto';
 }
 
 // Add success notification
@@ -770,4 +569,4 @@ function showErrorNotification(message) {
             document.body.removeChild(notification);
         }, 300);
     }, 5000);
-} 
+}
